@@ -8,8 +8,8 @@
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 *{box-sizing:border-box;margin:0;padding:0}
-body{background:#f0f3f8;color:#0d1421;font-family:'Inter',system-ui,sans-serif;font-size:13px;-webkit-font-smoothing:antialiased}
-@media(min-width:901px){html{zoom:1.25}}
+body{background:#f0f3f8;color:#0d1421;font-family:'Inter',system-ui,sans-serif;font-size:13px;-webkit-font-smoothing:antialiased;text-rendering:geometricPrecision}
+@media(min-width:901px){html{zoom:1.1}}
 
 /* ── Topbar ── */
 .topbar{height:50px;background:#fff;border-bottom:1px solid #e8ecf2;display:flex;align-items:center;justify-content:space-between;padding:0 24px;position:sticky;top:0;z-index:300}
@@ -100,7 +100,7 @@ body{background:#f0f3f8;color:#0d1421;font-family:'Inter',system-ui,sans-serif;f
 .ctog.on{background:var(--cc);color:#fff;opacity:1}
 
 /* ── Donut ── */
-.donut-wrap{display:flex;align-items:flex-start;gap:14px}
+.donut-wrap{display:grid;grid-template-columns:148px minmax(0,1fr);align-items:flex-start;gap:14px}
 .donut-box{position:relative;width:148px;height:148px;flex-shrink:0}
 .donut-ctr{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;pointer-events:none}
 .donut-cv{font-size:18px;font-weight:800}
@@ -108,10 +108,10 @@ body{background:#f0f3f8;color:#0d1421;font-family:'Inter',system-ui,sans-serif;f
 .dl-row{display:flex;align-items:center;padding:3px 0;border-bottom:1px solid #f4f5f9;cursor:pointer;transition:opacity .12s}
 .dl-row:hover{opacity:.7}
 .dl-row:last-child{border:none}
-.dl-left{display:flex;align-items:center;gap:6px}
+.dl-left{display:flex;align-items:center;gap:6px;min-width:0}
 .dl-dot{width:7px;height:7px;border-radius:2px;flex-shrink:0;margin-top:1px}
-.dl-name{font-size:11px;font-weight:500;line-height:1.2}
-.dl-sub{font-size:10px;color:#8a96aa;margin-top:1px}
+.dl-name{font-size:11px;font-weight:500;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dl-sub{font-size:10px;color:#8a96aa;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
 /* ── Market Cap header ── */
 .mktcap-top{display:flex;align-items:baseline;gap:16px;margin:-2px 0 10px}
@@ -524,6 +524,7 @@ function sparkSVG(pts,color,w=80,h=38){
 Chart.defaults.font.family="'Inter',system-ui,sans-serif";
 Chart.defaults.color='#8a96aa';
 Chart.defaults.maintainAspectRatio=false;
+Chart.defaults.devicePixelRatio=(window.devicePixelRatio||1)*(window.matchMedia('(min-width:901px)').matches?1.1:1);
 const crosshair={id:'crosshair',beforeDatasetsDraw(chart){
   if(!chart.tooltip._active?.length)return;
   const ctx=chart.ctx,x=chart.tooltip._active[0].element.x;
