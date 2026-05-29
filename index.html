@@ -524,7 +524,14 @@ function sparkSVG(pts,color,w=80,h=38){
 Chart.defaults.font.family="'Inter',system-ui,sans-serif";
 Chart.defaults.color='#8a96aa';
 Chart.defaults.maintainAspectRatio=false;
-Chart.defaults.devicePixelRatio=(window.devicePixelRatio||1)*(window.matchMedia('(min-width:901px)').matches?1.1:1);
+const DESKTOP_ZOOM=window.matchMedia('(min-width:901px)').matches?1.1:1;
+Chart.defaults.devicePixelRatio=(window.devicePixelRatio||1)*DESKTOP_ZOOM;
+const zoomPointerFix={id:'zoomPointerFix',beforeEvent(chart,args){
+  if(DESKTOP_ZOOM===1)return;
+  const e=args.event;
+  if(typeof e.x==='number')e.x/=DESKTOP_ZOOM;
+  if(typeof e.y==='number')e.y/=DESKTOP_ZOOM;
+}};
 const crosshair={id:'crosshair',beforeDatasetsDraw(chart){
   if(!chart.tooltip._active?.length)return;
   const ctx=chart.ctx,x=chart.tooltip._active[0].element.x;
@@ -532,7 +539,7 @@ const crosshair={id:'crosshair',beforeDatasetsDraw(chart){
   ctx.save();ctx.beginPath();ctx.moveTo(x,top);ctx.lineTo(x,bottom);
   ctx.lineWidth=1;ctx.strokeStyle='#d8dce8';ctx.setLineDash([4,3]);ctx.stroke();ctx.restore();
 }};
-Chart.register(crosshair);
+Chart.register(zoomPointerFix,crosshair);
 const TOOLTIP_BASE={mode:'index',intersect:false,backgroundColor:'#fff',titleColor:'#0d1421',titleFont:{size:11,weight:'700'},bodyColor:'#3d4f6e',bodyFont:{size:11},borderColor:'#e8ecf2',borderWidth:1,padding:{x:12,y:10},boxPadding:5,usePointStyle:true,pointStyle:'circle'};
 
 /* ── TAB SWITCHING ── */
