@@ -1,0 +1,16 @@
+# Keep this GitHub Pages repo limited to publishable web files.
+*
+
+!index.html
+!.gitignore
+!.nojekyll
+
+# Never publish local research/workbook material or editor temp files.
+*.xlsx
+*.xls
+*.docx
+*.doc
+*.pdf
+~$*
+*.tmp
+marketcap/
