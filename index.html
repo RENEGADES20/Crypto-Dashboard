@@ -9,12 +9,12 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:#f0f3f8;color:#0d1421;font-family:'Inter',system-ui,sans-serif;font-size:13px;-webkit-font-smoothing:antialiased;text-rendering:geometricPrecision}
-@media(min-width:901px){html{zoom:1.1}}
+html{zoom:1.25}
 
 /* ── Topbar ── */
 .topbar{height:50px;background:#fff;border-bottom:1px solid #e8ecf2;display:flex;align-items:center;justify-content:space-between;padding:0 24px;position:sticky;top:0;z-index:300}
 .brand{display:flex;align-items:center;gap:8px}
-.brand-mark{width:24px;height:24px;border-radius:6px;background:linear-gradient(135deg,#3861fb,#7b5cfa);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#fff}
+.brand-logo{width:31px;height:31px;border-radius:8px;display:block;flex:0 0 auto}
 .brand-name{font-size:13px;font-weight:700}
 .brand-sep{width:1px;height:16px;background:#e8ecf2;margin:0 10px}
 .brand-sub{font-size:11px;color:#8a96aa}
@@ -32,6 +32,8 @@ body{background:#f0f3f8;color:#0d1421;font-family:'Inter',system-ui,sans-serif;f
 
 .pane{display:none;padding:14px 24px 40px;max-width:1480px;margin:0 auto}
 .pane.active{display:block}
+.overview-map-pane{max-width:1580px;padding:8px 16px 0;overflow:hidden}
+.framework-map-frame{display:block;width:100%;height:calc(100vh - 102px);min-height:0;border:0;border-radius:10px;background:#edf1f6;box-shadow:0 8px 24px rgba(16,24,40,.08);overflow:hidden}
 
 /* ── Asset ticker strip ── */
 .asset-strip{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:12px}
@@ -217,8 +219,8 @@ table.at tbody tr:last-child td{border-bottom:none}
 
 <header class="topbar">
   <div class="brand">
-    <div class="brand-mark">R</div>
-    <span class="brand-name">Rebel Financial</span>
+    <img class="brand-logo" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='44' height='44' viewBox='0 0 44 44'%3E%3Crect width='44' height='44' rx='9' fill='%23723fa0'/%3E%3Ctext x='22' y='26.6' text-anchor='middle' font-family='Inter,Arial,sans-serif' font-size='13' font-weight='800' fill='white'%3ErF%3C/text%3E%3C/svg%3E" alt="rF">
+    <span class="brand-name">rebel Financial</span>
     <div class="brand-sep"></div>
     <span class="brand-sub">Digital Asset Research</span>
   </div>
@@ -232,12 +234,18 @@ table.at tbody tr:last-child td{border-bottom:none}
 </header>
 
 <nav class="tabbar">
-  <div class="tab-btn active" onclick="switchTab('overview',this)">Overview</div>
-  <div class="tab-btn" onclick="switchTab('sectors',this)">Sectors</div>
+  <div class="tab-btn active" data-tab="overview" onclick="switchTab('overview',this)">Overview</div>
+  <div class="tab-btn" data-tab="dashboard" onclick="switchTab('dashboard',this)">Dashboard</div>
+  <div class="tab-btn" data-tab="sectors" onclick="switchTab('sectors',this)">Sectors</div>
 </nav>
 
-<!-- ══ OVERVIEW ══ -->
-<div class="pane active" id="pane-overview">
+<!-- == OVERVIEW / FRAMEWORK MAP == -->
+<div class="pane active overview-map-pane" id="pane-overview">
+  <iframe class="framework-map-frame" id="framework-map-frame" title="Crypto Classification Map" scrolling="no"></iframe>
+</div>
+
+<!-- == DASHBOARD == -->
+<div class="pane" id="pane-dashboard">
 
   <!-- Asset ticker strip -->
   <div class="asset-strip" id="asset-strip"></div>
@@ -371,6 +379,896 @@ table.at tbody tr:last-child td{border-bottom:none}
     </div>
   </div>
 </div>
+
+<template id="framework-map-srcdoc">
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Digital Asset Ecosystem Map</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700;800;900&display=swap');
+
+:root{
+  --ink:#111827;
+  --muted:#667085;
+  --paper:#fbfcfe;
+  --line:#d9e0ea;
+}
+
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;overflow:hidden;background:#edf1f6;color:var(--ink);font-family:Inter,system-ui,-apple-system,Segoe UI,sans-serif}
+body{font-size:11px;-webkit-font-smoothing:antialiased}
+.page{max-width:1540px;margin:6px auto 0;padding:0 10px;transform:scale(.86);transform-origin:top center}
+.sheet{
+  background:var(--paper);
+  border:1px solid #d7dee9;
+  box-shadow:0 14px 34px rgba(16,24,40,.12);
+  padding:10px 12px 12px;
+}
+.top{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-end;
+  gap:18px;
+  height:42px;
+  margin-bottom:5px;
+}
+.eyebrow{font-size:9px;text-transform:uppercase;letter-spacing:.16em;color:#4565c8;font-weight:900;margin-bottom:3px}
+h1{font-size:22px;line-height:1;margin:0;letter-spacing:0}
+.stamp{font-size:9px;color:var(--muted);font-weight:800;text-transform:uppercase;letter-spacing:.08em;text-align:right}
+
+.ecosystem{
+  position:relative;
+  height:815px;
+  min-width:1500px;
+  overflow:hidden;
+  background:
+    radial-gradient(circle at 50% 50%,rgba(63,110,216,.08),transparent 16%),
+    radial-gradient(circle at 18% 23%,rgba(32,143,113,.08),transparent 20%),
+    radial-gradient(circle at 82% 22%,rgba(201,92,110,.08),transparent 18%),
+    #fff;
+  border:1px solid var(--line);
+  border-radius:12px;
+}
+.relation-layer{
+  position:absolute;
+  inset:0;
+  z-index:1;
+  width:100%;
+  height:100%;
+  pointer-events:none;
+  opacity:0;
+}
+.branch-lines{display:none}
+.hub{display:none}
+#clusters{
+  position:absolute;
+  inset:0;
+  z-index:5;
+}
+.bubble-label{
+  --c:#667085;
+  position:absolute;
+  z-index:24;
+  transform:translate(-50%,-50%);
+  display:inline-flex;
+  align-items:center;
+  white-space:nowrap;
+  border-radius:999px;
+  background:color-mix(in srgb,var(--c) 84%,#fff);
+  color:#fff;
+  padding:8px 16px;
+  font-size:14px;
+  font-weight:900;
+  box-shadow:0 3px 10px rgba(16,24,40,.13);
+  pointer-events:auto;
+  cursor:grab;
+  touch-action:none;
+  user-select:none;
+  will-change:left,top,transform;
+}
+.bubble-label.dragging{
+  cursor:grabbing;
+  z-index:40;
+  transform:translate(-50%,-50%) scale(1.04);
+  box-shadow:0 12px 26px rgba(16,24,40,.22);
+}
+.bubble-label span{
+  display:grid;
+  place-items:center;
+  width:19px;
+  height:19px;
+  border-radius:6px;
+  background:rgba(255,255,255,.22);
+  font-size:10px;
+}
+.logo{
+  --s:32px;
+  position:absolute;
+  z-index:16;
+  left:var(--x,50%);
+  top:var(--y,50%);
+  transform:translate(-50%,-50%);
+  width:var(--s);
+  height:var(--s);
+  border-radius:50%;
+  background:#fff;
+  border:1px solid rgba(152,162,179,.5);
+  box-shadow:0 1px 4px rgba(16,24,40,.14);
+  display:grid;
+  place-items:center;
+  overflow:hidden;
+  pointer-events:auto;
+  cursor:pointer;
+  touch-action:none;
+  user-select:none;
+  will-change:left,top,transform;
+  transition:transform .14s ease,box-shadow .14s ease,border-color .14s ease;
+}
+.logo:hover{
+  transform:translate(-50%,-50%) scale(1.1);
+  z-index:19;
+  border-color:color-mix(in srgb,var(--c) 60%,#fff);
+  box-shadow:0 8px 22px rgba(16,24,40,.2);
+}
+.logo.dragging{
+  z-index:32;
+  transform:translate(-50%,-50%) scale(1.13);
+  box-shadow:0 12px 28px rgba(16,24,40,.24);
+}
+.logo img{width:100%;height:100%;object-fit:contain;border-radius:50%;display:block}
+.logo span{
+  display:none;
+  width:100%;
+  height:100%;
+  place-items:center;
+  border-radius:50%;
+  background:color-mix(in srgb,var(--c) 15%,#fff);
+  color:color-mix(in srgb,var(--c) 85%,#111827);
+  font-size:7px;
+  font-weight:900;
+}
+.logo.failed img{display:none}
+.logo.failed span{display:grid}
+
+.coin-tooltip{
+  position:fixed;
+  z-index:50;
+  width:292px;
+  padding:14px;
+  border:1px solid #e6e8ee;
+  border-radius:8px;
+  background:#fff;
+  box-shadow:0 12px 30px rgba(16,24,40,.16);
+  color:#111827;
+  font-size:12px;
+  line-height:1.45;
+  pointer-events:none;
+  opacity:0;
+  transform:translateY(4px);
+  transition:opacity .12s ease,transform .12s ease;
+}
+.coin-tooltip.show{opacity:1;transform:translateY(0)}
+.tip-head{display:flex;align-items:center;gap:10px;margin-bottom:9px}
+.tip-logo{width:36px;height:36px;border-radius:50%;flex:0 0 auto;background:#f4f6f8;object-fit:contain}
+.tip-title{font-size:14px;font-weight:900;color:#0f172a}
+.tip-meta{display:flex;gap:8px;margin-top:2px;color:#667085;font-size:11px;font-weight:700}
+.tip-category{font-weight:900}
+.tip-desc{color:#374151}
+.section-mark{
+  width:36px;
+  height:36px;
+  border-radius:12px;
+  flex:0 0 auto;
+  display:grid;
+  place-items:center;
+  background:color-mix(in srgb,var(--c) 16%,#fff);
+  color:color-mix(in srgb,var(--c) 86%,#111827);
+  font-size:12px;
+  font-weight:900;
+}
+
+@media(max-width:1100px){.ecosystem{overflow:auto}}
+@page{size:letter landscape;margin:.2in}
+@media print{
+  html,body{background:#fff}
+  .page{max-width:none;margin:0;padding:0}
+  .sheet{border:0;box-shadow:none;padding:0}
+  .top{height:30px;margin-bottom:4px}
+  h1{font-size:18px}
+  .ecosystem{height:695px;min-width:1000px;border-radius:8px}
+  .logo{--s:22px}
+}
+</style>
+</head>
+<body>
+<main class="page">
+  <section class="sheet">
+    <header class="top">
+      <div>
+        <div class="eyebrow">Digital assets ecosystem map</div>
+        <h1>Crypto Classification Map</h1>
+      </div>
+      <div class="stamp">Advisor draft</div>
+    </header>
+    <section class="ecosystem" aria-label="Digital asset ecosystem map">
+      <div id="clusters"></div>
+    </section>
+    <div class="coin-tooltip" id="coin-tooltip" role="tooltip" aria-hidden="true"></div>
+  </section>
+</main>
+
+<script>
+const assetMeta = {
+  BTC:{name:"Bitcoin",cap:1300,desc:"The original decentralized cryptocurrency and the market's primary digital store-of-value benchmark."},
+  ETH:{name:"Ethereum",cap:380,desc:"A smart contract network powering DeFi, token issuance, NFTs, and much of the application ecosystem."},
+  SOL:{name:"Solana",cap:80,desc:"A high-throughput Layer 1 blockchain built for fast, low-cost consumer and financial applications."},
+  BNB:{name:"BNB",cap:90,desc:"The native asset of the BNB Chain and Binance-linked ecosystem, used across trading and on-chain activity."},
+  XRP:{name:"XRP",cap:130,desc:"A payments-focused asset used on the XRP Ledger for fast and low-cost value transfer."},
+  USDT:{name:"Tether",cap:120,desc:"The largest dollar-pegged stablecoin by circulation and a core source of crypto market liquidity."},
+  USDC:{name:"USD Coin",cap:55,desc:"A regulated dollar-backed stablecoin used for trading, payments, and on-chain settlement."},
+  DOGE:{name:"Dogecoin",cap:28,desc:"The original meme coin, supported by a large community and payments-oriented culture."},
+  ADA:{name:"Cardano",cap:18,desc:"A proof-of-stake Layer 1 focused on research-driven design, security, and smart contract infrastructure."},
+  TRX:{name:"TRON",cap:22,desc:"A high-throughput blockchain widely used for stablecoin transfers and low-fee transactions."},
+  AVAX:{name:"Avalanche",cap:14,desc:"A Layer 1 platform built around fast finality, custom subnets, and scalable application networks."},
+  LINK:{name:"Chainlink",cap:12,desc:"A decentralized oracle network connecting smart contracts to off-chain data, prices, and services."},
+  SHIB:{name:"Shiba Inu",cap:10,desc:"A meme coin ecosystem that expanded into DeFi, NFTs, and community-led products."},
+  TON:{name:"Toncoin",cap:18,desc:"A scalable Layer 1 ecosystem closely associated with messaging-native consumer crypto use cases."},
+  DOT:{name:"Polkadot",cap:10,desc:"A multichain network designed for interoperability through specialized chains and shared security."},
+  POL:{name:"Polygon",cap:9,desc:"The upgraded Polygon ecosystem token supporting Ethereum scaling and aggregated blockchain infrastructure."},
+  NEAR:{name:"NEAR Protocol",cap:9,desc:"A sharded Layer 1 focused on scalable applications, usability, and developer-friendly tooling."},
+  UNI:{name:"Uniswap",cap:7,desc:"A leading decentralized exchange protocol for automated token trading and liquidity provision."},
+  LTC:{name:"Litecoin",cap:7,desc:"A long-running payments-focused cryptocurrency with fast settlement and broad exchange support."},
+  BCH:{name:"Bitcoin Cash",cap:7,desc:"A Bitcoin-derived payments network designed for low-cost peer-to-peer transactions."},
+  SUI:{name:"Sui",cap:7,desc:"A Move-based Layer 1 optimized for object-centric assets and low-latency execution."},
+  APT:{name:"Aptos",cap:6,desc:"A Move-based Layer 1 blockchain focused on performance, safety, and parallel execution."},
+  ETC:{name:"Ethereum Classic",cap:5,desc:"The original Ethereum chain that continues as a proof-of-work smart contract network."},
+  ICP:{name:"Internet Computer",cap:5,desc:"A blockchain network designed to host web services and applications directly on-chain."},
+  XLM:{name:"Stellar",cap:6,desc:"A payments network built for cross-border transfers, tokenized assets, and financial access."},
+  XMR:{name:"Monero",cap:3,desc:"A privacy-focused cryptocurrency designed to obscure transaction amounts, senders, and recipients."},
+  ARB:{name:"Arbitrum",cap:8,desc:"An Ethereum Layer 2 rollup that reduces transaction costs while inheriting Ethereum security."},
+  OP:{name:"Optimism",cap:6,desc:"An Ethereum Layer 2 rollup and the foundation of the OP Stack scaling ecosystem."},
+  MNT:{name:"Mantle",cap:3,desc:"An Ethereum Layer 2 ecosystem focused on modular scaling, DeFi, and application growth."},
+  STRK:{name:"Starknet",cap:4,desc:"A zero-knowledge Layer 2 network scaling Ethereum with STARK proofs and Cairo applications."},
+  IMX:{name:"Immutable X",cap:3,desc:"A gaming and NFT-focused scaling platform for low-cost digital asset ownership."},
+  STX:{name:"Stacks",cap:2,desc:"A Bitcoin Layer 2 ecosystem bringing smart contracts and applications to Bitcoin."},
+  LDO:{name:"Lido",cap:4,desc:"Liquid staking infrastructure that lets users stake assets while retaining transferable token exposure."},
+  AAVE:{name:"Aave",cap:4,desc:"A decentralized lending protocol where users can supply, borrow, and manage crypto liquidity."},
+  MKR:{name:"Maker",cap:3,desc:"Governance and risk infrastructure behind the Dai stablecoin system."},
+  SKY:{name:"Sky",cap:3,desc:"The rebranded Maker ecosystem supporting decentralized stablecoin and collateral infrastructure."},
+  JUP:{name:"Jupiter",cap:4,desc:"A Solana liquidity aggregator routing swaps and supporting DeFi trading workflows."},
+  PENDLE:{name:"Pendle",cap:2,desc:"A yield trading protocol separating principal and yield exposure for DeFi strategies."},
+  ONDO:{name:"Ondo",cap:2,desc:"A real-world asset protocol focused on tokenized financial products and institutional-grade access."},
+  PAXG:{name:"PAX Gold",cap:1,desc:"A gold-backed token designed to represent ownership of physical gold on-chain."},
+  XAUT:{name:"Tether Gold",cap:1,desc:"A tokenized gold asset backed by allocated physical gold reserves."},
+  DAI:{name:"Dai",cap:5,desc:"A decentralized dollar-pegged stablecoin generated through overcollateralized crypto positions."},
+  USDE:{name:"Ethena USDe",cap:5,desc:"A synthetic dollar product using crypto collateral and hedging strategies."},
+  PYUSD:{name:"PayPal USD",cap:1,desc:"A dollar-backed stablecoin issued for payments and settlement use cases."},
+  FDUSD:{name:"FDUSD",cap:3,desc:"A dollar-backed stablecoin used across trading venues and on-chain settlement."},
+  PYTH:{name:"Pyth Network",cap:2,desc:"A market data oracle network delivering real-time institutional price feeds to blockchains."},
+  FIL:{name:"Filecoin",cap:4,desc:"A decentralized storage network creating markets for storing and retrieving data."},
+  AR:{name:"Arweave",cap:2,desc:"A permanent data storage network for durable web content and decentralized archives."},
+  GRT:{name:"The Graph",cap:2,desc:"An indexing protocol that lets applications query blockchain data through decentralized subgraphs."},
+  HNT:{name:"Helium",cap:2,desc:"A decentralized wireless infrastructure network powered by community-operated hotspots."},
+  AKT:{name:"Akash",cap:1,desc:"A decentralized cloud marketplace for buying and selling compute capacity."},
+  RENDER:{name:"Render",cap:4,desc:"A decentralized GPU network connecting compute supply with creators and AI workloads."},
+  FET:{name:"Fetch.ai",cap:3,desc:"Decentralized AI infrastructure for autonomous agents, data networks, and machine learning applications."},
+  TAO:{name:"Bittensor",cap:5,desc:"A decentralized AI network that incentivizes machine learning models and data services."},
+  WLD:{name:"Worldcoin",cap:3,desc:"A digital identity and token ecosystem built around proof-of-personhood applications."},
+  GALA:{name:"Gala",cap:1,desc:"A Web3 gaming and entertainment ecosystem built around player ownership and creator economies."},
+  SAND:{name:"The Sandbox",cap:2,desc:"A virtual world platform for creating, owning, and monetizing gaming experiences."},
+  MANA:{name:"Decentraland",cap:2,desc:"A virtual world where users own land, build experiences, and participate in a digital economy."},
+  AXS:{name:"Axie Infinity",cap:2,desc:"A blockchain gaming ecosystem centered on collectible characters, gameplay, and digital ownership."},
+  PEPE:{name:"Pepe",cap:8,desc:"A meme token driven by internet culture, community momentum, and speculative trading demand."},
+  BONK:{name:"Bonk",cap:3,desc:"A Solana meme coin that became a major community token across the ecosystem."},
+  WIF:{name:"Dogwifhat",cap:4,desc:"A Solana meme coin centered on viral branding and community attention."},
+  FLOKI:{name:"Floki",cap:2,desc:"A meme coin ecosystem spanning community, gaming, DeFi, and brand-led initiatives."},
+  BGB:{name:"Bitget Token",cap:6,desc:"An exchange utility token linked to trading benefits and ecosystem participation."},
+  OKB:{name:"OKB",cap:6,desc:"The utility token of the OKX ecosystem, used for exchange benefits and related services."},
+  LEO:{name:"UNUS SED LEO",cap:8,desc:"An exchange utility token associated with the iFinex and Bitfinex ecosystem."},
+  KCS:{name:"KuCoin Token",cap:2,desc:"The native utility token of the KuCoin exchange ecosystem."},
+  GT:{name:"GateToken",cap:2,desc:"The utility token for Gate.io, used for exchange discounts, services, and ecosystem participation."}
+};
+
+const categoryDescriptions = {
+  "Exchanges / Tools":"an exchange, custody, wallet, or crypto tooling asset used around market access and operations.",
+  "Base Layers":"a base-layer blockchain asset supporting settlement, consensus, or smart contract execution.",
+  "Apps / Protocols":"an application or protocol asset used in decentralized finance and on-chain services.",
+  "Scaling":"a scaling network or token that helps expand blockchain throughput and reduce transaction costs.",
+  "Yield / Staking":"a staking, yield, or liquidity protocol asset used for productive on-chain exposure.",
+  "Infrastructure":"an infrastructure asset supporting data, storage, compute, or middleware services.",
+  "RWA":"a real-world asset token or protocol linking traditional financial exposure with blockchain rails.",
+  "Stablecoins":"a stablecoin or stability-focused asset designed to track fiat value on-chain.",
+  "Payments":"a payments-oriented crypto asset used for transfer, remittance, or settlement use cases.",
+  "AI / Gaming":"an AI, gaming, metaverse, or consumer crypto asset tied to digital experiences and compute demand.",
+  "Meme / Culture":"a culture-driven token whose market value is strongly shaped by community and internet-native attention."
+};
+
+const sectionDescriptions = {
+  "Exchange":"Exchange tokens and market-access tools tied to trading venues, custody, wallets, and crypto operations.",
+  "Base Layers":"Core blockchains that provide settlement, consensus, smart contracts, and the base infrastructure for on-chain activity.",
+  "DeFi":"Application-layer protocols for trading, lending, liquidity, derivatives, and other decentralized financial services.",
+  "Scaling":"Layer 2s, rollups, and interoperability networks that expand blockchain capacity and reduce transaction costs.",
+  "Yield / Staking":"Protocols that turn crypto holdings into staking, liquidity, or yield-generating exposure.",
+  "Infrastructure":"Data, oracle, storage, compute, identity, and middleware assets that support the broader crypto stack.",
+  "RWA":"Tokens and protocols connecting traditional assets, credit, treasuries, commodities, or financial products to blockchain rails.",
+  "Stablecoins":"Fiat-pegged or stability-focused assets used for liquidity, settlement, payments, and on-chain cash management.",
+  "Payments":"Assets focused on value transfer, remittances, merchant payments, and fast low-cost settlement.",
+  "AI / Gaming":"Consumer, gaming, metaverse, and AI-linked networks where digital ownership or compute demand drives token use.",
+  "Meme":"Culture-driven tokens whose value is shaped mainly by community attention, internet-native narratives, and liquidity cycles."
+};
+
+const fallbackCaps = {
+  QNT:1, GNO:1, THETA:1, SEI:2, TIA:4, HBAR:4, ALGO:3, VET:2, FLOW:1, EGLD:3, IOTA:1, EOS:1,
+  ZK:1, ZRO:1, METIS:1, LRC:.5, SKL:.4, BOBA:.2, COMP:.7, SNX:.8, CRV:2, MORPHO:1, RAY:1,
+  CAKE:1, BAL:.2, SUSHI:.3, DYDX:2, GMX:2, "1INCH":1, YFI:.3, LQTY:.2, ZRX:.5, KNC:.2,
+  RPL:.5, JTO:2, ETHFI:1, ENA:2, CVX:.4, FXS:.5, CFG:.2, SYRUP:.5, RSR:.8, POLYX:.6,
+  CPOOL:.3, GFI:.2, TRU:.2, TUSD:.5, FRAX:.7, GHO:.2, USDS:3, LUSD:.1, USDD:.7,
+  ENS:1, API3:.4, BAND:.2, UMA:.5, ANKR:.6, NIGHT:.2, VIRTUAL:2, ILV:.4, CHZ:1, GMT:.3,
+  APE:.8, BLUR:.5, MAGIC:.2, PRIME:.8, POPCAT:1, BRETT:1, MOG:.8, TURBO:.7, MEME:.5, BOME:.5,
+  NEXO:1, SAFE:1, TWT:.8, ZBCN:.3, CELO:.8, NANO:.2, DASH:1
+};
+
+const logoIds = {
+  BTC:1, LTC:2, XRP:52, XLM:512, DOGE:74, ADA:2010, XMR:328, DASH:131, BCH:1831,
+  ETH:1027, BNB:1839, TRX:1958, ETC:1321, NEO:1376, EOS:1765, IOTA:1720,
+  LINK:1975, ATOM:3794, CRO:3635, QNT:3155, FIL:2280, GNO:1659, THETA:2416,
+  SOL:5426, AVAX:5805, SUI:20947, APT:21794, SEI:23149, TIA:22861, HBAR:4642, TON:11419,
+  ALGO:4030, VET:3077, ICP:8916, NEAR:6535, EGLD:6892, FLOW:4558, KAS:20396,
+  ARB:11841, OP:11840, MNT:27075, STRK:22691, POL:28321, IMX:10603, STX:4847,
+  ZK:24091, ZRO:26997, METIS:9640, LRC:1934, SKL:5691, BOBA:14556,
+  UNI:7083, AAVE:7278, MKR:1518, SKY:33039, COMP:5692, SNX:2586, CRV:6538,
+  LDO:8000, RPL:2943, JTO:28541, ETHFI:29814, PENDLE:9481, ENA:30171, MORPHO:34104,
+  JUP:29210, RAY:8526, CAKE:7186, BAL:5728, SUSHI:6758, DYDX:11156, GMX:11857,
+  "1INCH":8104, CVX:9903, FXS:6953, YFI:5864, LQTY:7429, ZRX:1896, KNC:1982,
+  ONDO:21159, CFG:6748, SYRUP:9417, PAXG:4705, XAUT:5176, RSR:3964, POLYX:20362, CPOOL:12573, GFI:13967, TRU:7725,
+  USDT:825, USDC:3408, DAI:4943, USDE:29470, TUSD:2563, PYUSD:27772, FDUSD:26081, FRAX:6952, GHO:23508, USDS:33039, LUSD:9566, USDD:19891,
+  PYTH:28177, GRT:6719, ENS:13855, API3:7737, BAND:4679, UMA:5617, ANKR:3783,
+  AR:5632, HNT:5665, AKT:7431, RNDR:5690, RENDER:5690, FET:3773, TAO:22974,
+  WLD:13502, VIRTUAL:3408, GALA:7080, SAND:6210, MANA:1966, AXS:6783, ILV:8719,
+  CHZ:4066, GMT:18069, APE:18876, BLUR:23121, MAGIC:14783, PRIME:23711,
+  PEPE:24478, SHIB:5994, BONK:23095, WIF:28752, FLOKI:10804, POPCAT:28782, BRETT:29743, MOG:27659, TURBO:24911, MEME:28301, BOME:29870,
+  BGB:11092, OKB:3897, LEO:3957, KCS:2087, GT:4269, NEXO:2694, SAFE:21564,
+  TWT:5964, ZBCN:30593, NIGHT:32179, CELO:5567, NANO:1567,
+  WBTC:3717, WETH:2396, XDC:2634, XTZ:2011, KAVA:4846, MINA:8646, ROSE:7653,
+  CSPR:5899, INJ:7226, RUNE:4157, ZIL:2469, ONE:3945, QTUM:1684, KDA:5647,
+  CFX:7334, FTM:3513, ASTR:12885, GLMR:6836, ZETA:21259, CORE:23254,
+  NTRN:26680, OSMO:12220, XEC:10791, LUNC:4172, AXL:17799, WEMIX:7548, FLR:231, XNO:1567,
+  JASMY:8425, IOTX:2777, RVN:2577, KSM:5034, WAVES:1274,
+  MASK:8536, RLC:1637, ARKM:27565, WOO:7501, ID:21846, BLZ:2505, COTI:3992,
+  MAV:18037, RDNT:21106, HFT:22461, SSV:12999, FIDA:7978, BNT:1727, OCEAN:3911,
+  LPT:3640, AUDIO:7455, NMR:1732, PERP:6950, BANANA:28066, COW:19269, AERO:29270,
+  AEVO:29676, EIGEN:30494, W:29587, REZ:30843, ALT:29073,
+  T:17751, REN:2539, KEEP:5566, BADGER:7859, ALPHA:7232, RBN:12387, MPL:9417,
+  USDY:29256, MPLX:21870, NXRA:17579, DUSK:4092, LTO:3714, PRO:1974,
+  EURC:20641, USDJ:5446, SUSD:2927, CUSD:7236, OUSD:7189, USDP:8886, USTC:7129,
+  TRB:4944, RIF:3701, DENT:1886, CELR:3814, STORJ:1772, SIA:1042, SC:1042,
+  RSS3:17917, POND:7497, NKN:2780, ORAI:7533, PHB:13969, IO:30432, NOS:3574,
+  DYM:28932, BIGTIME:28230, YGG:10688, PYR:9308, WAXP:2300, ALICE:8766, TLM:9119,
+  DAR:11374, AURY:11367, RON:14101, SUPER:8290, PORTAL:29555, PIXEL:29335,
+  SATS:28683, LADYS:25023, COQ:28675, MYRO:28382, SLERF:29843, MEW:30126,
+  PEOPLE:14806, DEGEN:30096, BABYDOGE:10407, ELON:9436, BONE:11865, NEIRO:32978,
+  MX:4041, FTT:4195, JOE:11396,
+  MANTA:29455, CTSI:5444, SYS:541, MOVR:9285, DGB:109, DCR:1168, MIM:162, USDX:6651,
+  RIO:4162, TOKEN:28299, TRADE:6198, CREDI:13256, GOLD:1421
+};
+
+const clusters = [
+  {cls:"tools",  color:"#7b8794", label:"Exchange", icon:"T",  assets:["BGB","OKB","LEO","KCS","GT","NEXO","SAFE","TWT","MX","FTT","WOO","JOE","COW","FIDA","BANANA","MASK","ARKM","ID","RLC","COTI"]},
+  {cls:"base",   color:"#3f6ed8", label:"Base Layers",        icon:"L1", assets:["BTC","ETH","SOL","BNB","ADA","TRX","AVAX","SUI","APT","TON","NEAR","ATOM","ICP","HBAR","ALGO","VET","ETC","SEI","TIA","CRO","KAS","FLOW","EGLD","IOTA","EOS","NEO","THETA","XMR","WBTC","WETH","XDC","XTZ","KAVA","MINA","ROSE","CSPR","INJ","RUNE","ZIL","ONE","QTUM","KDA","CFX","FTM","ASTR","GLMR","ZETA","CORE","NTRN","OSMO","XEC","LUNC","AXL","WEMIX","FLR","IOTX","RVN","KSM","WAVES"]},
+  {cls:"apps",   color:"#13966f", label:"DeFi",   icon:"A",  assets:["UNI","AAVE","MKR","SKY","COMP","SNX","CRV","MORPHO","JUP","RAY","CAKE","BAL","SUSHI","DYDX","GMX","1INCH","YFI","LQTY","ZRX","KNC","AERO","AEVO","EIGEN","W","REZ","ALT","RDNT","HFT","BNT","MAV","PERP","ALPHA","BADGER","RBN","LPT","AUDIO","NMR","OCEAN","ORAI"]},
+  {cls:"scaling",color:"#7147c4", label:"Scaling",             icon:"L2", assets:["ARB","OP","MNT","STRK","POL","IMX","STX","ZK","ZRO","METIS","LRC","SKL","BOBA","DYM","CELR","ASTR","GLMR","AXL","ZETA","MANTA","CTSI","SYS","MOVR","KSM"]},
+  {cls:"defi",   color:"#17a56b", label:"Yield / Staking",     icon:"Y",  assets:["LDO","RPL","JTO","ETHFI","PENDLE","ENA","CVX","FXS","SSV","FIDA","BNT","RDNT","MAV","COW","JOE","REZ","T","REN","KEEP","BADGER","ALPHA","MPL"]},
+  {cls:"infra",  color:"#596779", label:"Infrastructure",      icon:"I",  assets:["LINK","PYTH","GRT","FIL","AR","QNT","GNO","ENS","API3","BAND","UMA","ANKR","HNT","AKT","NIGHT","TRB","RIF","DENT","CELR","STORJ","SIA","SC","RSS3","POND","NKN","PHB","IO","NOS","JASMY","BLZ"]},
+  {cls:"rwa",    color:"#d7771c", label:"RWA",                  icon:"R",  assets:["ONDO","CFG","SYRUP","PAXG","XAUT","RSR","POLYX","CPOOL","GFI","TRU","MPL","USDY","MPLX","NXRA","DUSK","LTO","PRO","GOLD","RIO","TOKEN","CREDI","TRADE"]},
+  {cls:"stable", color:"#0b9488", label:"Stablecoins",          icon:"$",  assets:["USDT","USDC","DAI","USDE","TUSD","PYUSD","FDUSD","FRAX","GHO","USDS","LUSD","USDD","EURC","USDJ","SUSD","CUSD","OUSD","USDP","USTC","MIM","USDX"]},
+  {cls:"payments",color:"#3064d8",label:"Payments",             icon:"P",  assets:["XRP","XLM","LTC","DASH","ZBCN","CELO","NANO","BCH","XNO","XEC","IOTA","COTI","XDC","DGB","DCR"]},
+  {cls:"ai",     color:"#b44469", label:"AI / Gaming",          icon:"AI", assets:["RENDER","FET","TAO","WLD","VIRTUAL","GALA","SAND","MANA","AXS","ILV","CHZ","GMT","APE","BLUR","MAGIC","PRIME","BIGTIME","YGG","PYR","WAXP","ALICE","TLM","DAR","AURY","RON","SUPER","PORTAL","PIXEL","PHB","IO","NOS","ORAI"]},
+  {cls:"meme",   color:"#d05b45", label:"Meme",       icon:"M",  assets:["DOGE","SHIB","PEPE","BONK","WIF","FLOKI","POPCAT","BRETT","MOG","TURBO","MEME","BOME","SATS","LADYS","COQ","MYRO","SLERF","MEW","PEOPLE","DEGEN","BABYDOGE","ELON","BONE","NEIRO"]}
+];
+
+const sectorAnchors = {
+  base:{x:750,y:408},
+  tools:{x:750,y:120}, apps:{x:1050,y:175}, infra:{x:1235,y:320},
+  ai:{x:1235,y:496}, meme:{x:1050,y:640}, stable:{x:750,y:700},
+  payments:{x:450,y:640}, rwa:{x:265,y:496}, scaling:{x:265,y:320},
+  defi:{x:450,y:175}
+};
+
+const capValues = clusters.flatMap(c => c.assets.map(t => {
+  const m = assetMeta[t] || {}; return m.cap ?? fallbackCaps[t] ?? .35;
+}));
+const minLogCap = Math.min(...capValues.map(v => Math.log10(v + 1)));
+const maxLogCap = Math.max(...capValues.map(v => Math.log10(v + 1)));
+
+function metaFor(ticker, cluster){
+  const known = assetMeta[ticker] || {};
+  const name = known.name || ticker;
+  const cap = known.cap ?? fallbackCaps[ticker] ?? .35;
+  const desc = known.desc || `${name} is ${categoryDescriptions[cluster.label]}`;
+  return {name, cap, desc};
+}
+
+function logoSize(ticker, total, cluster){
+  const cap = metaFor(ticker, cluster).cap;
+  const norm = (Math.log10(cap + 1) - minLogCap) / (maxLogCap - minLogCap || 1);
+  const dense = total > 34;
+  const base = dense ? 22 : total > 20 ? 25 : 28;
+  const range = dense ? 50 : total > 20 ? 54 : 58;
+  return Math.round(base + Math.pow(norm, .82) * range);
+}
+
+function logoUrl(ticker){
+  return logoIds[ticker] ? `https://s2.coinmarketcap.com/static/img/coins/64x64/${logoIds[ticker]}.png` : "";
+}
+
+function formatCap(cap){
+  return cap >= 1000 ? `$${(cap/1000).toFixed(2)}T` : `$${cap < 10 ? cap.toFixed(1) : cap.toFixed(0)}B`;
+}
+
+function escapeHtml(s){
+  return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;");
+}
+
+function seeded(ticker, salt){
+  let h = 2166136261 ^ Math.imul(salt + 1, 2654435761);
+  for(const c of `${ticker}:${salt}`){
+    h ^= c.charCodeAt(0);
+    h = Math.imul(h, 16777619);
+  }
+  return (h >>> 0) / 4294967296;
+}
+
+function clamp(v, lo, hi){ return Math.max(lo, Math.min(hi, v)); }
+
+function clampNode(n){
+  n.x = clamp(n.x, n.r + 10, 1500 - n.r - 10);
+  n.y = clamp(n.y, n.r + 10, 815  - n.r - 10);
+}
+
+const PILL_ASSET_GAP = 12;
+const SECTION_LABEL_GAP = 112;
+const DRAG_ASSET_DAMPING = .18;
+const DRAG_SETTLE_STEPS = 4;
+const SECTOR_HOME_PULL = .026;
+const SECTOR_HOME_DAMPING = .82;
+
+function ellipseRadius(rx, ry, nx, ny){
+  return rx * ry / Math.sqrt((ry * nx) ** 2 + (rx * ny) ** 2);
+}
+
+function keepOutsideSectorPill(n, s, gap = PILL_ASSET_GAP){
+  let dx = n.x - s.x, dy = n.y - s.y;
+  let dist = Math.sqrt(dx * dx + dy * dy);
+  if(dist < .01){
+    const angle = n.angle ?? seeded(n.ticker || s.cluster.cls, 11) * Math.PI * 2;
+    dx = Math.cos(angle);
+    dy = Math.sin(angle);
+    dist = 1;
+  }
+
+  const nx = dx / dist, ny = dy / dist;
+  const rx = s.pillHalfW + n.r + gap;
+  const ry = s.pillHalfH + n.r + gap;
+  const minD = ellipseRadius(rx, ry, nx, ny);
+  if(dist >= minD) return false;
+
+  n.x = s.x + nx * minD;
+  n.y = s.y + ny * minD;
+  const inwardVelocity = n.vx * nx + n.vy * ny;
+  if(inwardVelocity < 0){
+    n.vx -= nx * inwardVelocity;
+    n.vy -= ny * inwardVelocity;
+  }
+  return true;
+}
+
+function keepOutsideAllPills(n, sectors){
+  let moved = false;
+  for(const s of sectors) moved = keepOutsideSectorPill(n, s) || moved;
+  return moved;
+}
+
+function dampSectorAssets(sector, state, factor = DRAG_ASSET_DAMPING){
+  for(const n of state.nodes){
+    if(n.sector !== sector || n.dragging) continue;
+    n.vx *= factor;
+    n.vy *= factor;
+  }
+}
+
+
+// ─── TOOLTIP ────────────────────────────────────────────────────────────────
+function moveTooltip(e){
+  const tip = document.getElementById("coin-tooltip");
+  const pad = 14, box = tip.getBoundingClientRect();
+  let x = e.clientX + 16, y = e.clientY + 16;
+  if(x + box.width + pad > window.innerWidth)  x = e.clientX - box.width - 16;
+  if(y + box.height + pad > window.innerHeight) y = e.clientY - box.height - 16;
+  tip.style.left = `${Math.max(pad,x)}px`;
+  tip.style.top  = `${Math.max(pad,y)}px`;
+}
+function showTooltip(e, ticker, cluster){
+  const tip = document.getElementById("coin-tooltip");
+  const meta = metaFor(ticker, cluster);
+  const src  = logoUrl(ticker);
+  tip.innerHTML = `
+    <div class="tip-head">
+      ${src ? `<img class="tip-logo" src="${src}" alt="${escapeHtml(ticker)}">` : `<div class="tip-logo"></div>`}
+      <div>
+        <div class="tip-title">${escapeHtml(meta.name)} <span style="color:var(--c)">${escapeHtml(ticker)}</span></div>
+        <div class="tip-meta"><span class="tip-category">${escapeHtml(cluster.label)}</span><span>${formatCap(meta.cap)} market cap</span></div>
+      </div>
+    </div>
+    <div class="tip-desc">${escapeHtml(meta.desc)}</div>`;
+  tip.style.setProperty("--c", cluster.color);
+  tip.classList.add("show");
+  tip.setAttribute("aria-hidden","false");
+  moveTooltip(e);
+}
+
+function showSectionTooltip(e, cluster){
+  const tip = document.getElementById("coin-tooltip");
+  const desc = sectionDescriptions[cluster.label] || categoryDescriptions[cluster.label] || "";
+  tip.innerHTML = `
+    <div class="tip-head">
+      <div class="section-mark">${escapeHtml(cluster.icon)}</div>
+      <div>
+        <div class="tip-title">${escapeHtml(cluster.label)}</div>
+        <div class="tip-meta"><span class="tip-category">Section overview</span><span>${cluster.assets.length} assets</span></div>
+      </div>
+    </div>
+    <div class="tip-desc">${escapeHtml(desc)}</div>`;
+  tip.style.setProperty("--c", cluster.color);
+  tip.classList.add("show");
+  tip.setAttribute("aria-hidden","false");
+  moveTooltip(e);
+}
+
+function hideTooltip(){
+  const tip = document.getElementById("coin-tooltip");
+  tip.classList.remove("show");
+  tip.setAttribute("aria-hidden","true");
+}
+
+// ─── PHYSICS ────────────────────────────────────────────────────────────────
+
+function repel(a, b, minD, str){
+  const dx = b.x - a.x, dy = b.y - a.y;
+  const dist = Math.sqrt(dx*dx + dy*dy) || .01;
+  if(dist >= minD) return;
+  const push = (minD - dist) / dist * str;
+  if(!a.dragging){ a.vx -= dx * push; a.vy -= dy * push; }
+  if(!b.dragging){ b.vx += dx * push; b.vy += dy * push; }
+}
+
+// ─── SIMULATION ─────────────────────────────────────────────────────────────
+// Asset layout: gravity toward sector center (not a ring/orbit).
+// Result is a filled blob. Y gravity 1.6× stronger → blob is wider than tall,
+// matching the pill shape. Large-cap gravity is stronger → stays closer to label.
+// Sector label keepout zone prevents assets covering the pill.
+// ────────────────────────────────────────────────────────────────────────────
+function simulateForce(state, steps = 1){
+  const {nodes, sectors} = state;
+  let totalSpeed = 0, count = 0;
+
+  for(let step = 0; step < steps; step++){
+
+    // 1. Sectors: gentle elastic home pull + soft inter-sector spacing
+    for(const s of sectors){
+      if(!s.dragging){
+        s.vx += (s.homeX - s.x) * SECTOR_HOME_PULL;
+        s.vy += (s.homeY - s.y) * SECTOR_HOME_PULL;
+      }
+    }
+    for(let i = 0; i < sectors.length; i++){
+      const a = sectors[i];
+      for(let j = i+1; j < sectors.length; j++){
+        const b = sectors[j];
+        const minD = Math.max(
+          a.labelRadius + b.labelRadius + SECTION_LABEL_GAP,
+          (a.influence + b.influence) * .58
+        );
+        repel(a, b, minD, .020);
+      }
+    }
+
+    // 2. Asset spring toward pill PERIMETER (not center).
+    //    - Assets are attracted to the nearest point on the pill edge ellipse.
+    //    - No asset pulled through the pill → no keepout oscillation.
+    //    - Asset-asset repulsion pushes overflow into outer layers.
+    //    - Result: dense cluster hugging the pill, multiple layers outward.
+    //    - Pill z-index stays above hover logos so labels remain readable.
+    for(const n of nodes){
+      if(n.dragging) continue;
+      const s  = n.sector;
+      const dx = n.x - s.x, dy = n.y - s.y;
+      // Gap = n.r + PILL_ASSET_GAP keeps logos close to the pill without covering it.
+      const pax = s.pillHalfW + n.r + PILL_ASSET_GAP;
+      const pay = s.pillHalfH + n.r + PILL_ASSET_GAP;
+
+      const n_  = s.cluster.assets.length;
+      const dist = Math.sqrt(dx*dx + dy*dy) || .01;
+      const nx = dx/dist, ny = dy/dist;
+
+      // Radial spring toward perimeter — zero tangential force, no left/right bias
+      const rPerim = pax * pay / Math.sqrt((pay*nx)**2 + (pax*ny)**2);
+      const err    = dist - rPerim;
+
+      // During sector drag, keep the original elastic follow with extra damping.
+      const kBase = s.dragging ? .075 : s.settleFrames > 0 ? .042 : .010;
+      const k = kBase / Math.pow(Math.max(10, n_) / 10, 0.38) * (.4 + n.capScore * 1.6);
+      n.vx -= nx * err * k;
+      n.vy -= ny * err * k;
+    }
+
+    // 3. Asset repulsion — same-sector spreads, cross-sector prevents intermingling
+    for(let i = 0; i < nodes.length; i++){
+      const a = nodes[i];
+      for(let j = i+1; j < nodes.length; j++){
+        const b    = nodes[j];
+        const same = a.sector === b.sector;
+        if(same){
+          const n_  = a.sector.cluster.assets.length;
+          const dragSoftening = (a.sector.dragging || a.sector.settleFrames > 0) ? .34 : 1;
+          const str = .62 * dragSoftening / Math.pow(Math.max(10, n_) / 10, 0.28);
+          repel(a, b, a.r + b.r + 5, str);
+        } else {
+          repel(a, b, a.r + b.r + 7, .44);
+        }
+      }
+    }
+
+    // 4. Sectors integrate
+    for(const s of sectors){
+      if(!s.dragging){ s.x += s.vx; s.y += s.vy; }
+      s.vx *= SECTOR_HOME_DAMPING; s.vy *= SECTOR_HOME_DAMPING;
+      clampNode(s);
+      totalSpeed += Math.abs(s.vx) + Math.abs(s.vy);
+      count++;
+    }
+
+    // 5. Assets integrate
+    for(const n of nodes){
+      if(!n.dragging){ n.x += n.vx; n.y += n.vy; }
+      const dragDamping = n.sector.dragging ? .56 : n.sector.settleFrames > 0 ? .72 : .90;
+      n.vx *= dragDamping; n.vy *= dragDamping;
+      clampNode(n);
+      if(!n.dragging){
+        keepOutsideAllPills(n, sectors);
+        clampNode(n);
+      }
+      totalSpeed += Math.abs(n.vx) + Math.abs(n.vy);
+      count++;
+    }
+
+    for(const s of sectors){
+      if(!s.dragging && s.settleFrames > 0) s.settleFrames--;
+    }
+  }
+
+  return count > 0 ? totalSpeed / count : 0;
+}
+
+// ─── SIMULATION LIFECYCLE ───────────────────────────────────────────────────
+function wakeSimulation(state){
+  state.active = true;
+  state.idleFrames = 0;
+  if(!state.raf) state.raf = requestAnimationFrame(() => tick(state));
+}
+
+function paintState(state){
+  state.sectors.forEach(s => {
+    s.el.style.left = `${s.x.toFixed(1)}px`;
+    s.el.style.top  = `${s.y.toFixed(1)}px`;
+  });
+  state.nodes.forEach(n => {
+    if(!n.el) return;
+    n.el.style.setProperty("--x", `${n.x.toFixed(1)}px`);
+    n.el.style.setProperty("--y", `${n.y.toFixed(1)}px`);
+  });
+}
+
+function tick(state){
+  state.raf = 0;
+  if(!state.active) return;
+  const speed = simulateForce(state, state.idleFrames < 8 ? 2 : 1);
+  paintState(state);
+  const dragging = state.sectors.some(s => s.dragging) || state.nodes.some(n => n.dragging);
+  const idleSpeed = dragging ? .025 : .06;
+  const idleLimit = dragging ? 10 : 55;
+  if(speed < idleSpeed) state.idleFrames++;
+  else state.idleFrames = 0;
+  if(state.idleFrames > idleLimit){ state.active = false; return; }
+  state.raf = requestAnimationFrame(() => tick(state));
+}
+
+// ─── DRAG ───────────────────────────────────────────────────────────────────
+function enableDrag(node, state, getEl){
+  getEl().addEventListener("pointerdown", e => {
+    if(e.button && e.button !== 0) return;
+    e.preventDefault();
+    getEl().setPointerCapture(e.pointerId);
+    getEl().classList.add("dragging");
+    hideTooltip();
+    node.dragging = true; node.vx = 0; node.vy = 0;
+    if(node.type === "sector"){
+      node.settleFrames = 0;
+      dampSectorAssets(node, state, 0);
+      paintState(state);
+    } else {
+      wakeSimulation(state);
+    }
+    const rect = () => document.querySelector(".ecosystem").getBoundingClientRect();
+    const startRect = rect();
+    const grabOffsetX = e.clientX - startRect.left - node.x;
+    const grabOffsetY = e.clientY - startRect.top - node.y;
+    let moved = false;
+    const move = ev => {
+      const r  = rect();
+      const prevX = node.x, prevY = node.y;
+      node.x = ev.clientX - r.left - grabOffsetX;
+      node.y = ev.clientY - r.top  - grabOffsetY;
+      clampNode(node);
+      moved = moved || Math.hypot(node.x - prevX, node.y - prevY) > .1;
+      if(node.type === "sector") simulateForce(state, DRAG_SETTLE_STEPS);
+      paintState(state);
+      wakeSimulation(state);
+    };
+    const up = () => {
+      node.dragging = false;
+      if(node.type === "sector"){
+        // Keep the original home anchor so dropped sections glide back into place.
+        if(moved) node.settleFrames = 26;
+      }
+      getEl().classList.remove("dragging");
+      getEl().releasePointerCapture(e.pointerId);
+      getEl().removeEventListener("pointermove", move);
+      getEl().removeEventListener("pointerup", up);
+      getEl().removeEventListener("pointercancel", up);
+      if(node.type !== "sector" || moved) wakeSimulation(state);
+      else paintState(state);
+    };
+    getEl().addEventListener("pointermove", move);
+    getEl().addEventListener("pointerup", up);
+    getEl().addEventListener("pointercancel", up);
+  });
+}
+
+// ─── RENDER ─────────────────────────────────────────────────────────────────
+function sectorInfluenceFor(cluster){
+  const sizes = cluster.assets.map(t => logoSize(t, cluster.assets.length, cluster));
+  const area  = sizes.reduce((sum, s) => sum + Math.PI * (s/2+5)**2, 0);
+  return clamp(Math.sqrt(area / Math.PI) * 1.38 + 44, 126, 255);
+}
+
+function render(){
+  const root = document.getElementById("clusters");
+  const seen = new Set();
+  const sectors = [], nodes = [];
+
+  clusters.forEach(cluster => {
+    const anchor = sectorAnchors[cluster.cls];
+    const label  = document.createElement("div");
+    label.className = "bubble-label";
+    label.style.setProperty("--c", cluster.color);
+    label.style.left = `${anchor.x}px`;
+    label.style.top  = `${anchor.y}px`;
+    label.innerHTML  = cluster.label;
+    const sectionDesc = sectionDescriptions[cluster.label] || categoryDescriptions[cluster.label] || "";
+    label.dataset.description = sectionDesc;
+    label.setAttribute("aria-label", `${cluster.label}: ${sectionDesc}`);
+    label.addEventListener("mouseenter", e => showSectionTooltip(e, cluster));
+    label.addEventListener("mousemove",  moveTooltip);
+    label.addEventListener("mouseleave", hideTooltip);
+    root.appendChild(label);
+    // Pill dimensions: prefer live measurement, fall back to text-length estimate
+    // (offsetWidth can be 0 before first reflow in some browsers)
+    const estW      = cluster.label.length * 9.5 + 36;   // ~9.5px per bold char + padding
+    const measW     = label.offsetWidth  > 40 ? label.offsetWidth  : estW;
+    const measH     = label.offsetHeight > 10 ? label.offsetHeight : 36;
+    const pillHalfW = measW / 2 + 12;
+    const pillHalfH = measH / 2 +  8;
+
+    const sector = {
+      type:"sector", cluster, el:label,
+      x:anchor.x, y:anchor.y, homeX:anchor.x, homeY:anchor.y,
+      vx:0, vy:0, r:58, labelRadius:72,
+      pillHalfW, pillHalfH,
+      influence:sectorInfluenceFor(cluster),
+      settleFrames:0,
+      dragging:false
+    };
+    sectors.push(sector);
+  });
+
+  clusters.forEach(cluster => {
+    const sector = sectors.find(s => s.cluster.cls === cluster.cls);
+    cluster.assets.forEach(ticker => {
+      if(seen.has(ticker)) return;
+      seen.add(ticker);
+      const size  = logoSize(ticker, cluster.assets.length, cluster);
+      const score = (Math.log10(metaFor(ticker,cluster).cap + 1) - minLogCap) / (maxLogCap - minLogCap || 1);
+      // Initial scatter: random position in elliptical area around label
+      // Physics will settle assets into final positions via pre-sim
+      const angle  = seeded(ticker, 1) * Math.PI * 2;
+      // Start at perimeter + random outward offset so pre-sim converges fast
+      const pax0   = sector.pillHalfW + size/2 + PILL_ASSET_GAP;
+      const pay0   = sector.pillHalfH + size/2 + PILL_ASSET_GAP;
+      const layer0 = 1.0 + seeded(ticker, 3) * 1.5;   // 1–2.5× perimeter distance
+      nodes.push({
+        type:"asset", ticker, cluster, sector,
+        size, r:size/2,
+        x: sector.x + Math.cos(angle) * pax0 * layer0,
+        y: sector.y + Math.sin(angle) * pay0 * layer0,
+        vx:0, vy:0, dragging:false,
+        angle,
+        seedRadius: seeded(ticker, 2),
+        capScore: score
+      });
+    });
+  });
+
+  // Pre-settle layout (more steps = cleaner initial state)
+  const state = {sectors, nodes, active:false, idleFrames:0, raf:0};
+  for(let i = 0; i < 2400; i++) simulateForce(state, 1);
+  nodes.forEach(n => {
+    keepOutsideAllPills(n, sectors);
+    n.vx = 0;
+    n.vy = 0;
+  });
+  sectors.forEach(s => {
+    s.vx = 0;
+    s.vy = 0;
+  });
+
+  // Build DOM after physics are settled
+  nodes.forEach(node => {
+    const item = document.createElement("div");
+    item.className = "logo";
+    item.style.setProperty("--s", `${node.size}px`);
+    item.style.setProperty("--c", node.cluster.color);
+    item.style.setProperty("--x", `${node.x.toFixed(1)}px`);
+    item.style.setProperty("--y", `${node.y.toFixed(1)}px`);
+    item.setAttribute("aria-label", node.ticker);
+    item.tabIndex = 0;
+    const src = logoUrl(node.ticker);
+    item.innerHTML = src
+      ? `<img src="${src}" alt="${node.ticker}" loading="lazy" onerror="this.parentElement.classList.add('failed')"><span>${node.ticker.slice(0,4)}</span>`
+      : `<span style="display:grid">${node.ticker.slice(0,4)}</span>`;
+    item.addEventListener("mouseenter", e => showTooltip(e, node.ticker, node.cluster));
+    item.addEventListener("mousemove",  moveTooltip);
+    item.addEventListener("mouseleave", hideTooltip);
+    item.addEventListener("focus",      e => showTooltip(e, node.ticker, node.cluster));
+    item.addEventListener("blur",       hideTooltip);
+    root.appendChild(item);
+    node.el = item;
+    enableDrag(node, state, () => item);
+  });
+
+  sectors.forEach(sector => enableDrag(sector, state, () => sector.el));
+  paintState(state);
+}
+
+render();
+</script>
+</body>
+</html>
+</template>
+
+<script>
+let frameworkMapInited=false;
+function initFrameworkMap(){
+  const frame=document.getElementById('framework-map-frame');
+  if(!frame||frameworkMapInited)return;
+  const tpl=document.getElementById('framework-map-srcdoc');
+  frame.srcdoc=tpl?tpl.innerHTML.trim():'';
+  frameworkMapInited=true;
+}
+initFrameworkMap();
+</script>
 
 <script>
 /* ══ STATIC DATA ══ */
@@ -542,17 +1440,19 @@ const crosshair={id:'crosshair',beforeDatasetsDraw(chart){
 Chart.register(zoomPointerFix,crosshair);
 const TOOLTIP_BASE={mode:'index',intersect:false,backgroundColor:'#fff',titleColor:'#0d1421',titleFont:{size:11,weight:'700'},bodyColor:'#3d4f6e',bodyFont:{size:11},borderColor:'#e8ecf2',borderWidth:1,padding:{x:12,y:10},boxPadding:5,usePointStyle:true,pointStyle:'circle'};
 
-/* ── TAB SWITCHING ── */
+/* -- TAB SWITCHING -- */
 function switchTab(id,btn){
   document.querySelectorAll('.pane').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
   document.getElementById('pane-'+id).classList.add('active');
-  btn.classList.add('active');
-  if(id==='overview')initOverview();
+  if(!btn)btn=document.querySelector(`.tab-btn[data-tab="${id}"]`);
+  if(btn)btn.classList.add('active');
+  if(id==='overview')initFrameworkMap();
+  if(id==='dashboard')initOverview();
   if(id==='sectors')initSectors();
 }
 
-/* ══════════════ OVERVIEW ══════════════ */
+/* ============== DASHBOARD ============== */
 let overviewInited=false;
 let donutChart=null,mktCapChart=null,compChart=null,volChart=null;
 let donutMode='ex',mktCapPeriod='30d',mktCapCoin='TOTAL',compMode='ex',tvInterval='W',tvTicker='BTC';
@@ -580,7 +1480,7 @@ function buildAssetStrip(){
     const color=pos?'#16c784':'#ea3943';
     const card=document.createElement('div');
     card.className='asc';
-    card.onclick=()=>{switchTab('sectors',document.querySelectorAll('.tab-btn')[1]);setTimeout(()=>openAsset(t),80);};
+    card.onclick=()=>{switchTab('sectors');setTimeout(()=>openAsset(t),80);};
     card.innerHTML=`<div>
       <div class="asc-nm">${d.n}</div>
       <div class="asc-sym" style="color:${COIN_COLORS[t]||'#0d1421'}">${t}</div>
@@ -611,7 +1511,7 @@ function buildMarketTable(){
       <td class="r mono">${fmt(a.m)}</td>
       <td class="r"><div class="share-cell"><div class="share-bar"><div class="share-fill" style="width:${Math.min(100,share).toFixed(1)}%;background:${coinColor(a.t)}"></div></div><span class="wpct">${share.toFixed(1)}%</span></div></td>
       <td class="r" style="font-size:11px;color:${meta.color};font-weight:700">${meta.label}</td>`;
-    tr.onclick=()=>{switchTab('sectors',document.querySelectorAll('.tab-btn')[1]);setTimeout(()=>openAsset(a.t),60);};
+    tr.onclick=()=>{switchTab('sectors');setTimeout(()=>openAsset(a.t),60);};
     tbody.appendChild(tr);
   });
   tbl.appendChild(tbody);
@@ -667,7 +1567,7 @@ function buildDonut(mode){
   sk.forEach(k=>{
     const m=tots[k]||0;
     const r=document.createElement('div');r.className='dl-row';
-    r.onclick=()=>{switchTab('sectors',document.querySelectorAll('.tab-btn')[1]);setTimeout(()=>openSector(k),60)};
+    r.onclick=()=>{switchTab('sectors');setTimeout(()=>openSector(k),60)};
     r.innerHTML=`<div class="dl-left"><div class="dl-dot" style="background:${SECTORS[k].color}"></div>
       <div><div class="dl-name">${SECTORS[k].label}</div>
       <div class="dl-sub">${fmt(m)} · ${pct(m,base)}</div></div></div>`;
@@ -951,7 +1851,7 @@ function openAsset(ticker){
   window.scrollTo({top:0,behavior:'smooth'});
 }
 
-initOverview();
+initFrameworkMap();
 </script>
 </body>
 </html>
