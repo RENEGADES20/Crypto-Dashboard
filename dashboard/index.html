@@ -1,0 +1,1857 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Digital Asset Research · rebel Financial</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#f0f3f8;color:#0d1421;font-family:'Inter',system-ui,sans-serif;font-size:13px;-webkit-font-smoothing:antialiased;text-rendering:geometricPrecision}
+html{zoom:1.25}
+
+/* ── Topbar ── */
+.topbar{height:50px;background:#fff;border-bottom:1px solid #e8ecf2;display:flex;align-items:center;justify-content:space-between;padding:0 24px;position:sticky;top:0;z-index:300}
+.brand{display:flex;align-items:center;gap:8px}
+.brand-logo{width:31px;height:31px;border-radius:8px;display:block;flex:0 0 auto}
+.brand-name{font-size:13px;font-weight:700}
+.brand-sep{width:1px;height:16px;background:#e8ecf2;margin:0 10px}
+.brand-sub{font-size:11px;color:#8a96aa}
+.topbar-right{display:flex;align-items:center;gap:0}
+.ts{padding:0 14px;border-right:1px solid #e8ecf2;text-align:right}
+.ts:last-child{border-right:none}
+.ts-l{font-size:9px;text-transform:uppercase;letter-spacing:.7px;color:#8a96aa;font-weight:600}
+.ts-v{font-size:12px;font-weight:700;margin-top:1px}
+
+/* ── Tabbar ── */
+.tabbar{background:#fff;border-bottom:1px solid #e8ecf2;padding:0 24px;display:flex;position:sticky;top:50px;z-index:200}
+.tab-btn{padding:11px 18px;font-size:12px;font-weight:600;color:#8a96aa;cursor:pointer;border-bottom:2px solid transparent;transition:all .15s;user-select:none}
+.tab-btn:hover{color:#0d1421}
+.tab-btn.active{color:#3861fb;border-bottom-color:#3861fb}
+
+.pane{display:none;padding:14px 24px 40px;max-width:1480px;margin:0 auto}
+.pane.active{display:block}
+.overview-map-pane{max-width:1580px;padding:8px 16px 0;overflow:hidden}
+.framework-map-frame{display:block;width:100%;height:calc(100vh - 102px);min-height:0;border:0;border-radius:10px;background:#edf1f6;box-shadow:0 8px 24px rgba(16,24,40,.08);overflow:hidden}
+
+/* ── Asset ticker strip ── */
+.asset-strip{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:12px}
+.asc{background:#fff;border:1px solid #e8ecf2;border-radius:10px;padding:12px 14px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;transition:box-shadow .12s;gap:10px}
+.asc:hover{box-shadow:0 2px 10px rgba(0,0,0,.07)}
+.asc-nm{font-size:10px;font-weight:600;color:#8a96aa}
+.asc-sym{font-size:13px;font-weight:800;color:#0d1421;margin:2px 0}
+.asc-pr{font-size:11px;color:#58667e;font-weight:500}
+.asc-pc{font-size:12px;font-weight:700;margin-top:2px}
+.asc-spark{flex-shrink:0}
+
+/* ── KPI row ── */
+.kpi-row{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:12px}
+.kpi{background:#fff;border:1px solid #e8ecf2;border-radius:10px;padding:12px 16px;border-top:2px solid var(--kc,#3861fb)}
+.kpi-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:#8a96aa}
+.kpi-val{font-size:19px;font-weight:800;margin:5px 0 2px;color:var(--kc,#0d1421)}
+.kpi-note{font-size:10px;color:#8a96aa}
+
+/* ── Cards ── */
+.card{background:#fff;border:1px solid #e8ecf2;border-radius:10px;padding:16px;margin-bottom:12px}
+.card-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px}
+.card-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:#8a96aa}
+.card-note{font-size:10px;color:#b0bac8}
+
+/* --- CMC-style market layout --- */
+.market-grid{display:grid;grid-template-columns:320px minmax(0,1fr);gap:12px;align-items:start;margin-bottom:12px}
+.market-main{min-width:0}
+.market-side{display:flex;flex-direction:column;gap:12px;min-width:0}
+.chart-card{margin-bottom:12px;min-width:0}
+.chart-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px;align-items:start}
+.chart-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:10px;flex-wrap:wrap}
+.chart-kicker{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.8px;color:#8a96aa}
+.chart-sub{font-size:11px;color:#8a96aa;margin-top:3px}
+.chart-tools{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.coin-picker{display:flex;align-items:center;gap:5px;flex-wrap:wrap}
+.coin-picker-label{font-size:9px;text-transform:uppercase;letter-spacing:.7px;color:#8a96aa;font-weight:800;margin-right:2px}
+.mini-select{background:#f8f9fc;border:1px solid #e8ecf2;border-radius:6px;padding:5px 8px;font-size:11px;font-weight:700;color:#0d1421;font-family:'Inter',sans-serif;outline:none;min-width:128px}
+.hover-hint{font-size:10px;color:#8a96aa}
+.market-table{width:100%;border-collapse:collapse}
+.market-table th{font-size:9px;text-transform:uppercase;letter-spacing:.7px;color:#8a96aa;text-align:left;padding:8px 10px;border-bottom:1px solid #eef1f6;background:#fbfcfe;white-space:nowrap}
+.market-table td{padding:8px 10px;border-bottom:1px solid #f3f5f9;vertical-align:middle}
+.market-table th.r,.market-table td.r{text-align:right}
+.market-table tr{cursor:pointer}
+.market-table tbody tr:hover td{background:#f4f7ff}
+.share-cell{display:flex;align-items:center;justify-content:flex-end;gap:7px}
+.share-bar{width:56px;height:5px;background:#edf1f7;border-radius:999px;overflow:hidden}
+.share-fill{height:100%;border-radius:999px}
+.side-list{display:flex;flex-direction:column;gap:7px}
+.side-row{display:grid;grid-template-columns:22px 1fr auto;gap:8px;align-items:center;padding:7px 0;border-bottom:1px solid #f4f5f9;cursor:pointer}
+.side-row:last-child{border-bottom:none}
+.side-row:hover{opacity:.76}
+.side-rank{font-size:10px;color:#b0bac8;font-weight:700}
+.side-name{font-size:12px;font-weight:700}
+.side-meta{font-size:10px;color:#8a96aa;margin-top:1px}
+.side-val{text-align:right;font-size:11px;font-weight:800}
+.sector-layout{display:grid;grid-template-columns:320px minmax(0,1fr);gap:12px;align-items:start}
+
+/* ── Toggle ── */
+.tog{display:flex;background:#f5f6fa;border:1px solid #e8ecf2;border-radius:6px;padding:2px;gap:1px}
+.tog-btn{padding:3px 9px;font-size:10px;font-weight:600;cursor:pointer;border-radius:4px;color:#8a96aa;transition:all .12s;user-select:none;white-space:nowrap}
+.tog-btn.on{background:#fff;color:#3861fb;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+
+/* ── Coin toggle chips (CMC-style) ── */
+.coin-tog{display:flex;gap:5px;flex-wrap:wrap;align-items:center}
+.ctog{padding:2px 9px;border-radius:20px;font-size:10px;font-weight:700;cursor:pointer;border:1.5px solid var(--cc,#888);color:var(--cc,#888);opacity:.32;transition:all .12s;user-select:none}
+.ctog.on{background:var(--cc);color:#fff;opacity:1}
+
+/* ── Donut ── */
+.donut-wrap{display:grid;grid-template-columns:148px minmax(0,1fr);align-items:flex-start;gap:14px}
+.donut-box{position:relative;width:148px;height:148px;flex-shrink:0}
+.donut-ctr{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;pointer-events:none}
+.donut-cv{font-size:18px;font-weight:800}
+.donut-cl{font-size:9px;text-transform:uppercase;letter-spacing:.5px;color:#8a96aa;margin-top:1px}
+.dl-row{display:flex;align-items:center;padding:3px 0;border-bottom:1px solid #f4f5f9;cursor:pointer;transition:opacity .12s}
+.dl-row:hover{opacity:.7}
+.dl-row:last-child{border:none}
+.dl-left{display:flex;align-items:center;gap:6px;min-width:0}
+.dl-dot{width:7px;height:7px;border-radius:2px;flex-shrink:0;margin-top:1px}
+.dl-name{font-size:11px;font-weight:500;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dl-sub{font-size:10px;color:#8a96aa;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* ── Market Cap header ── */
+.mktcap-top{display:flex;align-items:baseline;gap:16px;margin:-2px 0 10px}
+.mktcap-big{font-size:24px;font-weight:800}
+.mktcap-sub{font-size:11px;color:#8a96aa}
+.mktcap-sub strong{color:#3d4f6e;font-weight:600}
+
+/* ── Chart heights ── */
+.ch280{height:280px}.ch260{height:260px}.ch220{height:260px}.ch200{height:200px}
+.ch280 canvas,.ch260 canvas,.ch220 canvas,.ch200 canvas{width:100%!important;height:100%!important}
+
+/* ── K-Line ── */
+.kline-hdr{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 16px;border-bottom:1px solid #f4f5f9}
+.kline-select{background:#f5f6fa;border:1px solid #e8ecf2;border-radius:6px;padding:5px 10px;font-size:12px;font-weight:600;color:#0d1421;font-family:'Inter',sans-serif;cursor:pointer;outline:none;min-width:200px}
+.kline-ivs{display:flex;gap:2px;margin-left:auto}
+.kiv{padding:4px 9px;font-size:10px;font-weight:700;color:#8a96aa;cursor:pointer;border-radius:5px;transition:all .12s;user-select:none}
+.kiv:hover{background:#f5f6fa}
+.kiv.on{background:#eff3ff;color:#3861fb}
+.kline-body{height:380px}
+#tv-embed,#tv-asset{width:100%;height:100%;display:block;border-radius:0 0 10px 10px;overflow:hidden}
+.tv-placeholder{height:100%;display:flex;align-items:center;justify-content:center;color:#8a96aa;font-size:12px;background:linear-gradient(180deg,#fff,#fbfcff)}
+
+/* ── Sectors ── */
+.sector-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.sc-card{background:#fff;border:1px solid #e8ecf2;border-radius:10px;padding:16px;cursor:pointer;border-top:3px solid;transition:box-shadow .15s}
+.sc-card:hover{box-shadow:0 4px 16px rgba(0,0,0,.08)}
+.sc-name{font-size:13px;font-weight:700;margin-bottom:6px;display:flex;align-items:center;gap:8px}
+.sc-cnt{font-size:10px;font-weight:600;padding:2px 7px;border-radius:10px}
+.sc-desc{font-size:11px;color:#58667e;line-height:1.55;margin-bottom:12px}
+.sc-foot{display:flex;gap:20px;padding-top:10px;border-top:1px solid #f4f5f9;flex-wrap:wrap}
+.sc-stat-l{font-size:9px;text-transform:uppercase;letter-spacing:.5px;color:#8a96aa;font-weight:600}
+.sc-stat-v{font-size:13px;font-weight:700;margin-top:3px}
+
+/* ── Sector detail ── */
+.back-row{display:flex;align-items:center;gap:6px;margin-bottom:12px}
+.back-btn{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;color:#3861fb;cursor:pointer;padding:5px 10px;border:1px solid #d0d9ff;border-radius:6px;background:#f4f6ff;transition:all .12s;user-select:none}
+.back-btn:hover{background:#e6eaff}
+.crumb{font-size:12px;color:#8a96aa}
+.crumb span{color:#0d1421;font-weight:600}
+
+.sd-hdr{background:#fff;border:1px solid #e8ecf2;border-radius:10px;padding:16px 20px;margin-bottom:12px}
+.sd-title{font-size:18px;font-weight:800;margin-bottom:4px}
+.sd-desc-text{font-size:12px;color:#58667e;line-height:1.6;max-width:700px;margin-bottom:12px}
+.sd-stats{display:flex;gap:28px;padding-top:10px;border-top:1px solid #f4f5f9;flex-wrap:wrap}
+.sd-stat-l{font-size:9px;text-transform:uppercase;letter-spacing:.5px;color:#8a96aa;font-weight:600}
+.sd-stat-v{font-size:14px;font-weight:700;margin-top:3px}
+
+table.at{width:100%;border-collapse:collapse}
+table.at th{background:#f8f9fc;padding:8px 14px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:#8a96aa;text-align:left;border-bottom:1px solid #e8ecf2;white-space:nowrap}
+table.at th.r,table.at td.r{text-align:right}
+table.at td{padding:9px 14px;border-bottom:1px solid #f4f5f9;vertical-align:middle}
+table.at tbody tr{cursor:pointer;transition:background .1s}
+table.at tbody tr:hover td{background:#f4f7ff}
+table.at tbody tr:last-child td{border-bottom:none}
+
+/* ── Asset detail ── */
+.asset-hdr{background:#fff;border:1px solid #e8ecf2;border-radius:10px;padding:20px 24px;margin-bottom:12px}
+.asset-hdr-top{display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:14px}
+.asset-name-row{display:flex;align-items:center;gap:12px}
+.asset-ico{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:800;border:2px solid;flex-shrink:0}
+.asset-ticker{font-size:26px;font-weight:800;line-height:1}
+.asset-fullname{font-size:13px;color:#58667e;margin-top:4px}
+.asset-price-col{text-align:right}
+.asset-price{font-size:26px;font-weight:800}
+.asset-mc{font-size:12px;color:#58667e;margin-top:4px}
+.asset-pills{display:flex;gap:8px;flex-wrap:wrap}
+.pill{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:6px;font-size:11px;font-weight:600}
+.pdot{width:5px;height:5px;border-radius:50%}
+.rank-pill{background:#f5f6fa;color:#58667e;border:1px solid #e8ecf2}
+.asset-body{display:grid;grid-template-columns:1fr 280px;gap:12px;margin-bottom:12px;align-items:start}
+.about-card{background:#fff;border:1px solid #e8ecf2;border-radius:10px;padding:18px}
+.about-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:#8a96aa;margin-bottom:10px}
+.about-text{font-size:13px;color:#3d4f6e;line-height:1.7}
+.about-section{margin-top:12px;padding-top:12px;border-top:1px solid #f4f5f9}
+.about-section:first-child{margin-top:0;padding-top:0;border-top:none}
+.about-section-title{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.7px;color:#8a96aa;margin-bottom:5px}
+.stats-card{background:#fff;border:1px solid #e8ecf2;border-radius:10px;padding:16px}
+.stat-row{display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid #f4f5f9}
+.stat-row:last-child{border-bottom:none}
+.stat-lbl{font-size:11px;color:#8a96aa;font-weight:500}
+.stat-val{font-size:12px;font-weight:700;text-align:right}
+
+/* ── Common ── */
+.ac{display:flex;align-items:center;gap:8px}
+.aico{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;flex-shrink:0;border:1.5px solid}
+.asym{font-size:12px;font-weight:700}
+.aname-s{font-size:10px;color:#8a96aa;margin-top:1px}
+.rk{font-size:10px;color:#b0bac8;font-weight:500}
+.mono{font-size:11px;font-weight:600}
+.wbar-wrap{display:flex;align-items:center;justify-content:flex-end;gap:6px}
+.wbar{width:48px;height:4px;background:#eef0f6;border-radius:3px;overflow:hidden}
+.wbar-fill{height:100%;border-radius:3px}
+.wpct{font-size:10px;color:#8a96aa;width:36px;text-align:right}
+.hidden{display:none!important}
+
+@media(max-width:1180px){.market-grid,.sector-layout{grid-template-columns:1fr}.market-side{display:grid;grid-template-columns:1fr 1fr}.asset-body{grid-template-columns:1fr}.topbar-right{display:none}}
+@media(max-width:900px){.asset-strip,.kpi-row,.sector-grid,.market-side{grid-template-columns:1fr 1fr}.pane{padding:12px 14px 32px}.tabbar{overflow:auto;padding:0 14px}.topbar{padding:0 14px}.brand-sub{display:none}}
+@media(max-width:760px){.chart-row{grid-template-columns:1fr}}
+@media(max-width:640px){.asset-strip,.kpi-row,.sector-grid,.market-side{grid-template-columns:1fr}.chart-head,.chart-tools,.kline-hdr{align-items:stretch}.chart-tools{justify-content:flex-start}.kline-select{min-width:100%;width:100%}.kline-ivs{margin-left:0}.mktcap-top{display:block}.mktcap-sub{display:block;margin-top:4px}.market-table{min-width:640px}.table-scroll{overflow-x:auto}.asset-price-col{text-align:left}.asset-hdr{padding:16px}.ch280{height:240px}.ch260{height:230px}.ch220{height:230px}}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <img class="brand-logo" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='44' height='44' viewBox='0 0 44 44'%3E%3Crect width='44' height='44' rx='9' fill='%23723fa0'/%3E%3Ctext x='22' y='26.6' text-anchor='middle' font-family='Inter,Arial,sans-serif' font-size='13' font-weight='800' fill='white'%3ErF%3C/text%3E%3C/svg%3E" alt="rF">
+    <span class="brand-name">rebel Financial</span>
+    <div class="brand-sep"></div>
+    <span class="brand-sub">Digital Asset Research</span>
+  </div>
+  <div class="topbar-right">
+    <div class="ts"><div class="ts-l">Total Mkt Cap</div><div class="ts-v" id="hdr-tot" style="color:#3861fb">—</div></div>
+    <div class="ts"><div class="ts-l">BTC Dom.</div><div class="ts-v" id="hdr-btc" style="color:#f7931a">—</div></div>
+    <div class="ts"><div class="ts-l">ETH Share</div><div class="ts-v" id="hdr-eth" style="color:#627eea">—</div></div>
+    <div class="ts"><div class="ts-l">Ex-BTC/ETH</div><div class="ts-v" id="hdr-ex" style="color:#10b981">—</div></div>
+    <div class="ts"><div class="ts-l">As of</div><div class="ts-v" style="color:#8a96aa;font-size:11px">Jun 2026</div></div>
+  </div>
+</header>
+
+<nav class="tabbar">
+  <div class="tab-btn active" data-tab="overview" onclick="switchTab('overview',this)">Overview</div>
+  <div class="tab-btn" data-tab="dashboard" onclick="switchTab('dashboard',this)">Dashboard</div>
+  <div class="tab-btn" data-tab="sectors" onclick="switchTab('sectors',this)">Sectors</div>
+</nav>
+
+<!-- == OVERVIEW / FRAMEWORK MAP == -->
+<div class="pane active overview-map-pane" id="pane-overview">
+  <iframe class="framework-map-frame" id="framework-map-frame" title="Crypto Classification Map" scrolling="no"></iframe>
+</div>
+
+<!-- == DASHBOARD == -->
+<div class="pane" id="pane-dashboard">
+
+  <!-- Asset ticker strip -->
+  <div class="asset-strip" id="asset-strip"></div>
+
+  <!-- KPI row -->
+  <div class="kpi-row">
+    <div class="kpi" style="--kc:#3861fb"><div class="kpi-label">Total Market Cap</div><div class="kpi-val" id="k-total">—</div><div class="kpi-note">50 assets covered</div></div>
+    <div class="kpi" style="--kc:#f7931a"><div class="kpi-label">BTC Dominance</div><div class="kpi-val" id="k-btc">—</div><div class="kpi-note">largest single position</div></div>
+    <div class="kpi" style="--kc:#627eea"><div class="kpi-label">ETH Share</div><div class="kpi-val" id="k-eth">—</div><div class="kpi-note">Ethereum ecosystem</div></div>
+    <div class="kpi" style="--kc:#10b981"><div class="kpi-label">Ex-BTC / ETH</div><div class="kpi-val" id="k-ex">—</div><div class="kpi-note">48 diversified assets</div></div>
+    <div class="kpi" style="--kc:#8b5cf6"><div class="kpi-label">Sectors</div><div class="kpi-val">9</div><div class="kpi-note">thematic coverage</div></div>
+  </div>
+
+  <!-- Row: donut + CMC Market Cap -->
+  <div class="market-grid">
+
+    <!-- Sector Weights -->
+    <div class="card" style="padding:16px;margin-bottom:0">
+      <div class="card-hdr">
+        <span class="card-title">Sector Market Share</span>
+        <div class="tog" id="donut-tog">
+          <span class="tog-btn on" onclick="setDonutMode('ex',this)">Ex-BTC/ETH</span>
+          <span class="tog-btn" onclick="setDonutMode('all',this)">All</span>
+        </div>
+      </div>
+      <div class="donut-wrap">
+        <div class="donut-box">
+          <canvas id="donut-canvas" width="148" height="148"></canvas>
+          <div class="donut-ctr"><div class="donut-cv" id="donut-cv">48</div><div class="donut-cl">Assets</div></div>
+        </div>
+        <div style="flex:1;min-width:0" id="donut-legend"></div>
+      </div>
+    </div>
+
+    <!-- Crypto Market Cap (CMC style) -->
+    <div class="card" style="padding:16px;margin-bottom:0">
+      <div class="card-hdr" style="margin-bottom:4px">
+        <div>
+          <div class="card-title">Crypto Market Cap</div>
+          <div class="chart-sub">Hover for the floating legend. Select a coin to compare.</div>
+          <div class="mktcap-top">
+            <span class="mktcap-big" id="mktcap-big">—</span>
+            <span class="mktcap-sub">Volume (24h)&nbsp; <strong id="mktcap-vol">—</strong></span>
+          </div>
+        </div>
+        <select class="mini-select" id="mktcap-coin" onchange="setMktCapCoin(this.value)"></select>
+        <div class="tog" id="mktcap-tog">
+          <span class="tog-btn on" onclick="setMktCapPeriod('30d',this)">30d</span>
+          <span class="tog-btn" onclick="setMktCapPeriod('1y',this)">1y</span>
+        </div>
+      </div>
+      <div class="ch280"><canvas id="mktcap-canvas"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Asset Composition — stacked area (CMC "by Chain" style) -->
+  <div class="chart-row">
+  <div class="card chart-card">
+    <div class="card-hdr">
+      <div>
+        <span class="card-title">Market Share</span>
+        <span class="card-note" id="comp-note" style="margin-left:8px">Ex-BTC/ETH · % of ex-BTC/ETH market</span>
+      </div>
+      <div class="coin-picker" id="comp-tog"></div>
+      <div class="tog" id="comp-mode-tog">
+        <span class="tog-btn on" onclick="setCompMode('ex',this)">Ex-BTC/ETH</span>
+        <span class="tog-btn" onclick="setCompMode('all',this)">All</span>
+      </div>
+    </div>
+    <div class="ch260"><canvas id="comp-canvas"></canvas></div>
+  </div>
+
+  <!-- Volatility with coin toggles -->
+  <div class="card chart-card">
+    <div class="card-hdr">
+      <div><span class="card-title">30-Day Annualized Volatility</span><div class="chart-sub">Hover for selected-coin legend</div></div>
+      <div class="coin-picker" id="vol-tog"></div>
+    </div>
+    <div class="ch220"><canvas id="vol-canvas"></canvas></div>
+  </div>
+  </div>
+
+  <div class="card" style="padding:0;overflow:hidden">
+    <div class="card-hdr" style="padding:14px 16px 4px;margin-bottom:0">
+      <span class="card-title">Top Assets by Market Cap</span>
+      <span class="hover-hint">Sorted descending by market cap</span>
+    </div>
+    <div class="table-scroll"><table class="market-table" id="market-table"></table></div>
+  </div>
+
+  <!-- TradingView K-Line -->
+  <div class="card" style="padding:0;overflow:hidden">
+    <div class="kline-hdr">
+      <span class="card-title" style="color:#8a96aa">Price Chart (TradingView)</span>
+      <select class="kline-select" id="kline-sel" onchange="klineChange()"></select>
+      <div class="kline-ivs">
+        <span class="kiv" onclick="setIv('60',this)">1H</span>
+        <span class="kiv" onclick="setIv('D',this)">1D</span>
+        <span class="kiv on" onclick="setIv('W',this)">1W</span>
+        <span class="kiv" onclick="setIv('M',this)">1M</span>
+      </div>
+    </div>
+    <div class="kline-body"><div id="tv-embed"></div></div>
+  </div>
+</div>
+
+<!-- ══ SECTORS ══ -->
+<div class="pane" id="pane-sectors">
+  <div id="sv-grid"><div class="sector-grid" id="sector-grid-el"></div></div>
+  <div id="sv-sector" class="hidden">
+    <div class="back-row">
+      <div class="back-btn" onclick="goGrid()">← Sectors</div>
+      <span class="crumb">/ <span id="crumb-sector"></span></span>
+    </div>
+    <div class="sd-hdr" id="sd-hdr-el"></div>
+    <div class="card" style="padding:0;overflow:hidden"><table class="at" id="sd-table"></table></div>
+  </div>
+  <div id="sv-asset" class="hidden">
+    <div class="back-row">
+      <div class="back-btn" onclick="goSector()">← <span id="crumb-back-sector"></span></div>
+      <span class="crumb">/ <span id="crumb-asset"></span></span>
+    </div>
+    <div class="asset-hdr" id="asset-hdr-el"></div>
+    <div class="asset-body">
+      <div class="about-card" id="asset-about"></div>
+      <div class="stats-card" id="asset-stats"></div>
+    </div>
+    <div class="card" style="padding:0;overflow:hidden;margin-bottom:12px">
+      <div class="kline-hdr"><span class="card-title" style="color:#8a96aa">Market Price Chart</span></div>
+      <div style="height:300px"><div id="tv-asset" style="width:100%;height:100%"></div></div>
+    </div>
+  </div>
+</div>
+
+<template id="framework-map-srcdoc">
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Digital Asset Ecosystem Map</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700;800;900&display=swap');
+
+:root{
+  --ink:#111827;
+  --muted:#667085;
+  --paper:#fbfcfe;
+  --line:#d9e0ea;
+}
+
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;overflow:hidden;background:#edf1f6;color:var(--ink);font-family:Inter,system-ui,-apple-system,Segoe UI,sans-serif}
+body{font-size:11px;-webkit-font-smoothing:antialiased}
+.page{max-width:1540px;margin:6px auto 0;padding:0 10px;transform:scale(.86);transform-origin:top center}
+.sheet{
+  background:var(--paper);
+  border:1px solid #d7dee9;
+  box-shadow:0 14px 34px rgba(16,24,40,.12);
+  padding:10px 12px 12px;
+}
+.top{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-end;
+  gap:18px;
+  height:42px;
+  margin-bottom:5px;
+}
+.eyebrow{font-size:9px;text-transform:uppercase;letter-spacing:.16em;color:#4565c8;font-weight:900;margin-bottom:3px}
+h1{font-size:22px;line-height:1;margin:0;letter-spacing:0}
+.stamp{font-size:9px;color:var(--muted);font-weight:800;text-transform:uppercase;letter-spacing:.08em;text-align:right}
+
+.ecosystem{
+  position:relative;
+  height:815px;
+  min-width:1500px;
+  overflow:hidden;
+  background:
+    radial-gradient(circle at 50% 50%,rgba(63,110,216,.08),transparent 16%),
+    radial-gradient(circle at 18% 23%,rgba(32,143,113,.08),transparent 20%),
+    radial-gradient(circle at 82% 22%,rgba(201,92,110,.08),transparent 18%),
+    #fff;
+  border:1px solid var(--line);
+  border-radius:12px;
+}
+.relation-layer{
+  position:absolute;
+  inset:0;
+  z-index:1;
+  width:100%;
+  height:100%;
+  pointer-events:none;
+  opacity:0;
+}
+.branch-lines{display:none}
+.hub{display:none}
+#clusters{
+  position:absolute;
+  inset:0;
+  z-index:5;
+}
+.bubble-label{
+  --c:#667085;
+  position:absolute;
+  z-index:24;
+  transform:translate(-50%,-50%);
+  display:inline-flex;
+  align-items:center;
+  white-space:nowrap;
+  border-radius:999px;
+  background:color-mix(in srgb,var(--c) 84%,#fff);
+  color:#fff;
+  padding:8px 16px;
+  font-size:14px;
+  font-weight:900;
+  box-shadow:0 3px 10px rgba(16,24,40,.13);
+  pointer-events:auto;
+  cursor:grab;
+  touch-action:none;
+  user-select:none;
+  will-change:left,top,transform;
+}
+.bubble-label.dragging{
+  cursor:grabbing;
+  z-index:40;
+  transform:translate(-50%,-50%) scale(1.04);
+  box-shadow:0 12px 26px rgba(16,24,40,.22);
+}
+.bubble-label span{
+  display:grid;
+  place-items:center;
+  width:19px;
+  height:19px;
+  border-radius:6px;
+  background:rgba(255,255,255,.22);
+  font-size:10px;
+}
+.logo{
+  --s:32px;
+  position:absolute;
+  z-index:16;
+  left:var(--x,50%);
+  top:var(--y,50%);
+  transform:translate(-50%,-50%);
+  width:var(--s);
+  height:var(--s);
+  border-radius:50%;
+  background:#fff;
+  border:1px solid rgba(152,162,179,.5);
+  box-shadow:0 1px 4px rgba(16,24,40,.14);
+  display:grid;
+  place-items:center;
+  overflow:hidden;
+  pointer-events:auto;
+  cursor:pointer;
+  touch-action:none;
+  user-select:none;
+  will-change:left,top,transform;
+  transition:transform .14s ease,box-shadow .14s ease,border-color .14s ease;
+}
+.logo:hover{
+  transform:translate(-50%,-50%) scale(1.1);
+  z-index:19;
+  border-color:color-mix(in srgb,var(--c) 60%,#fff);
+  box-shadow:0 8px 22px rgba(16,24,40,.2);
+}
+.logo.dragging{
+  z-index:32;
+  transform:translate(-50%,-50%) scale(1.13);
+  box-shadow:0 12px 28px rgba(16,24,40,.24);
+}
+.logo img{width:100%;height:100%;object-fit:contain;border-radius:50%;display:block}
+.logo span{
+  display:none;
+  width:100%;
+  height:100%;
+  place-items:center;
+  border-radius:50%;
+  background:color-mix(in srgb,var(--c) 15%,#fff);
+  color:color-mix(in srgb,var(--c) 85%,#111827);
+  font-size:7px;
+  font-weight:900;
+}
+.logo.failed img{display:none}
+.logo.failed span{display:grid}
+
+.coin-tooltip{
+  position:fixed;
+  z-index:50;
+  width:292px;
+  padding:14px;
+  border:1px solid #e6e8ee;
+  border-radius:8px;
+  background:#fff;
+  box-shadow:0 12px 30px rgba(16,24,40,.16);
+  color:#111827;
+  font-size:12px;
+  line-height:1.45;
+  pointer-events:none;
+  opacity:0;
+  transform:translateY(4px);
+  transition:opacity .12s ease,transform .12s ease;
+}
+.coin-tooltip.show{opacity:1;transform:translateY(0)}
+.tip-head{display:flex;align-items:center;gap:10px;margin-bottom:9px}
+.tip-logo{width:36px;height:36px;border-radius:50%;flex:0 0 auto;background:#f4f6f8;object-fit:contain}
+.tip-title{font-size:14px;font-weight:900;color:#0f172a}
+.tip-meta{display:flex;gap:8px;margin-top:2px;color:#667085;font-size:11px;font-weight:700}
+.tip-category{font-weight:900}
+.tip-desc{color:#374151}
+.section-mark{
+  width:36px;
+  height:36px;
+  border-radius:12px;
+  flex:0 0 auto;
+  display:grid;
+  place-items:center;
+  background:color-mix(in srgb,var(--c) 16%,#fff);
+  color:color-mix(in srgb,var(--c) 86%,#111827);
+  font-size:12px;
+  font-weight:900;
+}
+
+@media(max-width:1100px){.ecosystem{overflow:auto}}
+@page{size:letter landscape;margin:.2in}
+@media print{
+  html,body{background:#fff}
+  .page{max-width:none;margin:0;padding:0}
+  .sheet{border:0;box-shadow:none;padding:0}
+  .top{height:30px;margin-bottom:4px}
+  h1{font-size:18px}
+  .ecosystem{height:695px;min-width:1000px;border-radius:8px}
+  .logo{--s:22px}
+}
+</style>
+</head>
+<body>
+<main class="page">
+  <section class="sheet">
+    <header class="top">
+      <div>
+        <div class="eyebrow">Digital assets ecosystem map</div>
+        <h1>Crypto Classification Map</h1>
+      </div>
+      <div class="stamp">Advisor draft</div>
+    </header>
+    <section class="ecosystem" aria-label="Digital asset ecosystem map">
+      <div id="clusters"></div>
+    </section>
+    <div class="coin-tooltip" id="coin-tooltip" role="tooltip" aria-hidden="true"></div>
+  </section>
+</main>
+
+<script>
+const assetMeta = {
+  BTC:{name:"Bitcoin",cap:1300,desc:"The original decentralized cryptocurrency and the market's primary digital store-of-value benchmark."},
+  ETH:{name:"Ethereum",cap:380,desc:"A smart contract network powering DeFi, token issuance, NFTs, and much of the application ecosystem."},
+  SOL:{name:"Solana",cap:80,desc:"A high-throughput Layer 1 blockchain built for fast, low-cost consumer and financial applications."},
+  BNB:{name:"BNB",cap:90,desc:"The native asset of the BNB Chain and Binance-linked ecosystem, used across trading and on-chain activity."},
+  XRP:{name:"XRP",cap:130,desc:"A payments-focused asset used on the XRP Ledger for fast and low-cost value transfer."},
+  USDT:{name:"Tether",cap:120,desc:"The largest dollar-pegged stablecoin by circulation and a core source of crypto market liquidity."},
+  USDC:{name:"USD Coin",cap:55,desc:"A regulated dollar-backed stablecoin used for trading, payments, and on-chain settlement."},
+  DOGE:{name:"Dogecoin",cap:28,desc:"The original meme coin, supported by a large community and payments-oriented culture."},
+  ADA:{name:"Cardano",cap:18,desc:"A proof-of-stake Layer 1 focused on research-driven design, security, and smart contract infrastructure."},
+  TRX:{name:"TRON",cap:22,desc:"A high-throughput blockchain widely used for stablecoin transfers and low-fee transactions."},
+  AVAX:{name:"Avalanche",cap:14,desc:"A Layer 1 platform built around fast finality, custom subnets, and scalable application networks."},
+  LINK:{name:"Chainlink",cap:12,desc:"A decentralized oracle network connecting smart contracts to off-chain data, prices, and services."},
+  SHIB:{name:"Shiba Inu",cap:10,desc:"A meme coin ecosystem that expanded into DeFi, NFTs, and community-led products."},
+  TON:{name:"Toncoin",cap:18,desc:"A scalable Layer 1 ecosystem closely associated with messaging-native consumer crypto use cases."},
+  DOT:{name:"Polkadot",cap:10,desc:"A multichain network designed for interoperability through specialized chains and shared security."},
+  POL:{name:"Polygon",cap:9,desc:"The upgraded Polygon ecosystem token supporting Ethereum scaling and aggregated blockchain infrastructure."},
+  NEAR:{name:"NEAR Protocol",cap:9,desc:"A sharded Layer 1 focused on scalable applications, usability, and developer-friendly tooling."},
+  UNI:{name:"Uniswap",cap:7,desc:"A leading decentralized exchange protocol for automated token trading and liquidity provision."},
+  LTC:{name:"Litecoin",cap:7,desc:"A long-running payments-focused cryptocurrency with fast settlement and broad exchange support."},
+  BCH:{name:"Bitcoin Cash",cap:7,desc:"A Bitcoin-derived payments network designed for low-cost peer-to-peer transactions."},
+  SUI:{name:"Sui",cap:7,desc:"A Move-based Layer 1 optimized for object-centric assets and low-latency execution."},
+  APT:{name:"Aptos",cap:6,desc:"A Move-based Layer 1 blockchain focused on performance, safety, and parallel execution."},
+  ETC:{name:"Ethereum Classic",cap:5,desc:"The original Ethereum chain that continues as a proof-of-work smart contract network."},
+  ICP:{name:"Internet Computer",cap:5,desc:"A blockchain network designed to host web services and applications directly on-chain."},
+  XLM:{name:"Stellar",cap:6,desc:"A payments network built for cross-border transfers, tokenized assets, and financial access."},
+  XMR:{name:"Monero",cap:3,desc:"A privacy-focused cryptocurrency designed to obscure transaction amounts, senders, and recipients."},
+  ARB:{name:"Arbitrum",cap:8,desc:"An Ethereum Layer 2 rollup that reduces transaction costs while inheriting Ethereum security."},
+  OP:{name:"Optimism",cap:6,desc:"An Ethereum Layer 2 rollup and the foundation of the OP Stack scaling ecosystem."},
+  MNT:{name:"Mantle",cap:3,desc:"An Ethereum Layer 2 ecosystem focused on modular scaling, DeFi, and application growth."},
+  STRK:{name:"Starknet",cap:4,desc:"A zero-knowledge Layer 2 network scaling Ethereum with STARK proofs and Cairo applications."},
+  IMX:{name:"Immutable X",cap:3,desc:"A gaming and NFT-focused scaling platform for low-cost digital asset ownership."},
+  STX:{name:"Stacks",cap:2,desc:"A Bitcoin Layer 2 ecosystem bringing smart contracts and applications to Bitcoin."},
+  LDO:{name:"Lido",cap:4,desc:"Liquid staking infrastructure that lets users stake assets while retaining transferable token exposure."},
+  AAVE:{name:"Aave",cap:4,desc:"A decentralized lending protocol where users can supply, borrow, and manage crypto liquidity."},
+  MKR:{name:"Maker",cap:3,desc:"Governance and risk infrastructure behind the Dai stablecoin system."},
+  SKY:{name:"Sky",cap:3,desc:"The rebranded Maker ecosystem supporting decentralized stablecoin and collateral infrastructure."},
+  JUP:{name:"Jupiter",cap:4,desc:"A Solana liquidity aggregator routing swaps and supporting DeFi trading workflows."},
+  PENDLE:{name:"Pendle",cap:2,desc:"A yield trading protocol separating principal and yield exposure for DeFi strategies."},
+  ONDO:{name:"Ondo",cap:2,desc:"A real-world asset protocol focused on tokenized financial products and institutional-grade access."},
+  PAXG:{name:"PAX Gold",cap:1,desc:"A gold-backed token designed to represent ownership of physical gold on-chain."},
+  XAUT:{name:"Tether Gold",cap:1,desc:"A tokenized gold asset backed by allocated physical gold reserves."},
+  DAI:{name:"Dai",cap:5,desc:"A decentralized dollar-pegged stablecoin generated through overcollateralized crypto positions."},
+  USDE:{name:"Ethena USDe",cap:5,desc:"A synthetic dollar product using crypto collateral and hedging strategies."},
+  PYUSD:{name:"PayPal USD",cap:1,desc:"A dollar-backed stablecoin issued for payments and settlement use cases."},
+  FDUSD:{name:"FDUSD",cap:3,desc:"A dollar-backed stablecoin used across trading venues and on-chain settlement."},
+  PYTH:{name:"Pyth Network",cap:2,desc:"A market data oracle network delivering real-time institutional price feeds to blockchains."},
+  FIL:{name:"Filecoin",cap:4,desc:"A decentralized storage network creating markets for storing and retrieving data."},
+  AR:{name:"Arweave",cap:2,desc:"A permanent data storage network for durable web content and decentralized archives."},
+  GRT:{name:"The Graph",cap:2,desc:"An indexing protocol that lets applications query blockchain data through decentralized subgraphs."},
+  HNT:{name:"Helium",cap:2,desc:"A decentralized wireless infrastructure network powered by community-operated hotspots."},
+  AKT:{name:"Akash",cap:1,desc:"A decentralized cloud marketplace for buying and selling compute capacity."},
+  RENDER:{name:"Render",cap:4,desc:"A decentralized GPU network connecting compute supply with creators and AI workloads."},
+  FET:{name:"Fetch.ai",cap:3,desc:"Decentralized AI infrastructure for autonomous agents, data networks, and machine learning applications."},
+  TAO:{name:"Bittensor",cap:5,desc:"A decentralized AI network that incentivizes machine learning models and data services."},
+  WLD:{name:"Worldcoin",cap:3,desc:"A digital identity and token ecosystem built around proof-of-personhood applications."},
+  GALA:{name:"Gala",cap:1,desc:"A Web3 gaming and entertainment ecosystem built around player ownership and creator economies."},
+  SAND:{name:"The Sandbox",cap:2,desc:"A virtual world platform for creating, owning, and monetizing gaming experiences."},
+  MANA:{name:"Decentraland",cap:2,desc:"A virtual world where users own land, build experiences, and participate in a digital economy."},
+  AXS:{name:"Axie Infinity",cap:2,desc:"A blockchain gaming ecosystem centered on collectible characters, gameplay, and digital ownership."},
+  PEPE:{name:"Pepe",cap:8,desc:"A meme token driven by internet culture, community momentum, and speculative trading demand."},
+  BONK:{name:"Bonk",cap:3,desc:"A Solana meme coin that became a major community token across the ecosystem."},
+  WIF:{name:"Dogwifhat",cap:4,desc:"A Solana meme coin centered on viral branding and community attention."},
+  FLOKI:{name:"Floki",cap:2,desc:"A meme coin ecosystem spanning community, gaming, DeFi, and brand-led initiatives."},
+  BGB:{name:"Bitget Token",cap:6,desc:"An exchange utility token linked to trading benefits and ecosystem participation."},
+  OKB:{name:"OKB",cap:6,desc:"The utility token of the OKX ecosystem, used for exchange benefits and related services."},
+  LEO:{name:"UNUS SED LEO",cap:8,desc:"An exchange utility token associated with the iFinex and Bitfinex ecosystem."},
+  KCS:{name:"KuCoin Token",cap:2,desc:"The native utility token of the KuCoin exchange ecosystem."},
+  GT:{name:"GateToken",cap:2,desc:"The utility token for Gate.io, used for exchange discounts, services, and ecosystem participation."}
+};
+
+const categoryDescriptions = {
+  "Exchanges / Tools":"an exchange, custody, wallet, or crypto tooling asset used around market access and operations.",
+  "Base Layers":"a base-layer blockchain asset supporting settlement, consensus, or smart contract execution.",
+  "Apps / Protocols":"an application or protocol asset used in decentralized finance and on-chain services.",
+  "Scaling":"a scaling network or token that helps expand blockchain throughput and reduce transaction costs.",
+  "Yield / Staking":"a staking, yield, or liquidity protocol asset used for productive on-chain exposure.",
+  "Infrastructure":"an infrastructure asset supporting data, storage, compute, or middleware services.",
+  "RWA":"a real-world asset token or protocol linking traditional financial exposure with blockchain rails.",
+  "Stablecoins":"a stablecoin or stability-focused asset designed to track fiat value on-chain.",
+  "Payments":"a payments-oriented crypto asset used for transfer, remittance, or settlement use cases.",
+  "AI / Gaming":"an AI, gaming, metaverse, or consumer crypto asset tied to digital experiences and compute demand.",
+  "Meme / Culture":"a culture-driven token whose market value is strongly shaped by community and internet-native attention."
+};
+
+const sectionDescriptions = {
+  "Exchange":"Exchange tokens and market-access tools tied to trading venues, custody, wallets, and crypto operations.",
+  "Base Layers":"Core blockchains that provide settlement, consensus, smart contracts, and the base infrastructure for on-chain activity.",
+  "DeFi":"Application-layer protocols for trading, lending, liquidity, derivatives, and other decentralized financial services.",
+  "Scaling":"Layer 2s, rollups, and interoperability networks that expand blockchain capacity and reduce transaction costs.",
+  "Yield / Staking":"Protocols that turn crypto holdings into staking, liquidity, or yield-generating exposure.",
+  "Infrastructure":"Data, oracle, storage, compute, identity, and middleware assets that support the broader crypto stack.",
+  "RWA":"Tokens and protocols connecting traditional assets, credit, treasuries, commodities, or financial products to blockchain rails.",
+  "Stablecoins":"Fiat-pegged or stability-focused assets used for liquidity, settlement, payments, and on-chain cash management.",
+  "Payments":"Assets focused on value transfer, remittances, merchant payments, and fast low-cost settlement.",
+  "AI / Gaming":"Consumer, gaming, metaverse, and AI-linked networks where digital ownership or compute demand drives token use.",
+  "Meme":"Culture-driven tokens whose value is shaped mainly by community attention, internet-native narratives, and liquidity cycles."
+};
+
+const fallbackCaps = {
+  QNT:1, GNO:1, THETA:1, SEI:2, TIA:4, HBAR:4, ALGO:3, VET:2, FLOW:1, EGLD:3, IOTA:1, EOS:1,
+  ZK:1, ZRO:1, METIS:1, LRC:.5, SKL:.4, BOBA:.2, COMP:.7, SNX:.8, CRV:2, MORPHO:1, RAY:1,
+  CAKE:1, BAL:.2, SUSHI:.3, DYDX:2, GMX:2, "1INCH":1, YFI:.3, LQTY:.2, ZRX:.5, KNC:.2,
+  RPL:.5, JTO:2, ETHFI:1, ENA:2, CVX:.4, FXS:.5, CFG:.2, SYRUP:.5, RSR:.8, POLYX:.6,
+  CPOOL:.3, GFI:.2, TRU:.2, TUSD:.5, FRAX:.7, GHO:.2, USDS:3, LUSD:.1, USDD:.7,
+  ENS:1, API3:.4, BAND:.2, UMA:.5, ANKR:.6, NIGHT:.2, VIRTUAL:2, ILV:.4, CHZ:1, GMT:.3,
+  APE:.8, BLUR:.5, MAGIC:.2, PRIME:.8, POPCAT:1, BRETT:1, MOG:.8, TURBO:.7, MEME:.5, BOME:.5,
+  NEXO:1, SAFE:1, TWT:.8, ZBCN:.3, CELO:.8, NANO:.2, DASH:1
+};
+
+const logoIds = {
+  BTC:1, LTC:2, XRP:52, XLM:512, DOGE:74, ADA:2010, XMR:328, DASH:131, BCH:1831,
+  ETH:1027, BNB:1839, TRX:1958, ETC:1321, NEO:1376, EOS:1765, IOTA:1720,
+  LINK:1975, ATOM:3794, CRO:3635, QNT:3155, FIL:2280, GNO:1659, THETA:2416,
+  SOL:5426, AVAX:5805, SUI:20947, APT:21794, SEI:23149, TIA:22861, HBAR:4642, TON:11419,
+  ALGO:4030, VET:3077, ICP:8916, NEAR:6535, EGLD:6892, FLOW:4558, KAS:20396,
+  ARB:11841, OP:11840, MNT:27075, STRK:22691, POL:28321, IMX:10603, STX:4847,
+  ZK:24091, ZRO:26997, METIS:9640, LRC:1934, SKL:5691, BOBA:14556,
+  UNI:7083, AAVE:7278, MKR:1518, SKY:33039, COMP:5692, SNX:2586, CRV:6538,
+  LDO:8000, RPL:2943, JTO:28541, ETHFI:29814, PENDLE:9481, ENA:30171, MORPHO:34104,
+  JUP:29210, RAY:8526, CAKE:7186, BAL:5728, SUSHI:6758, DYDX:11156, GMX:11857,
+  "1INCH":8104, CVX:9903, FXS:6953, YFI:5864, LQTY:7429, ZRX:1896, KNC:1982,
+  ONDO:21159, CFG:6748, SYRUP:9417, PAXG:4705, XAUT:5176, RSR:3964, POLYX:20362, CPOOL:12573, GFI:13967, TRU:7725,
+  USDT:825, USDC:3408, DAI:4943, USDE:29470, TUSD:2563, PYUSD:27772, FDUSD:26081, FRAX:6952, GHO:23508, USDS:33039, LUSD:9566, USDD:19891,
+  PYTH:28177, GRT:6719, ENS:13855, API3:7737, BAND:4679, UMA:5617, ANKR:3783,
+  AR:5632, HNT:5665, AKT:7431, RNDR:5690, RENDER:5690, FET:3773, TAO:22974,
+  WLD:13502, VIRTUAL:3408, GALA:7080, SAND:6210, MANA:1966, AXS:6783, ILV:8719,
+  CHZ:4066, GMT:18069, APE:18876, BLUR:23121, MAGIC:14783, PRIME:23711,
+  PEPE:24478, SHIB:5994, BONK:23095, WIF:28752, FLOKI:10804, POPCAT:28782, BRETT:29743, MOG:27659, TURBO:24911, MEME:28301, BOME:29870,
+  BGB:11092, OKB:3897, LEO:3957, KCS:2087, GT:4269, NEXO:2694, SAFE:21564,
+  TWT:5964, ZBCN:30593, NIGHT:32179, CELO:5567, NANO:1567,
+  WBTC:3717, WETH:2396, XDC:2634, XTZ:2011, KAVA:4846, MINA:8646, ROSE:7653,
+  CSPR:5899, INJ:7226, RUNE:4157, ZIL:2469, ONE:3945, QTUM:1684, KDA:5647,
+  CFX:7334, FTM:3513, ASTR:12885, GLMR:6836, ZETA:21259, CORE:23254,
+  NTRN:26680, OSMO:12220, XEC:10791, LUNC:4172, AXL:17799, WEMIX:7548, FLR:231, XNO:1567,
+  JASMY:8425, IOTX:2777, RVN:2577, KSM:5034, WAVES:1274,
+  MASK:8536, RLC:1637, ARKM:27565, WOO:7501, ID:21846, BLZ:2505, COTI:3992,
+  MAV:18037, RDNT:21106, HFT:22461, SSV:12999, FIDA:7978, BNT:1727, OCEAN:3911,
+  LPT:3640, AUDIO:7455, NMR:1732, PERP:6950, BANANA:28066, COW:19269, AERO:29270,
+  AEVO:29676, EIGEN:30494, W:29587, REZ:30843, ALT:29073,
+  T:17751, REN:2539, KEEP:5566, BADGER:7859, ALPHA:7232, RBN:12387, MPL:9417,
+  USDY:29256, MPLX:21870, NXRA:17579, DUSK:4092, LTO:3714, PRO:1974,
+  EURC:20641, USDJ:5446, SUSD:2927, CUSD:7236, OUSD:7189, USDP:8886, USTC:7129,
+  TRB:4944, RIF:3701, DENT:1886, CELR:3814, STORJ:1772, SIA:1042, SC:1042,
+  RSS3:17917, POND:7497, NKN:2780, ORAI:7533, PHB:13969, IO:30432, NOS:3574,
+  DYM:28932, BIGTIME:28230, YGG:10688, PYR:9308, WAXP:2300, ALICE:8766, TLM:9119,
+  DAR:11374, AURY:11367, RON:14101, SUPER:8290, PORTAL:29555, PIXEL:29335,
+  SATS:28683, LADYS:25023, COQ:28675, MYRO:28382, SLERF:29843, MEW:30126,
+  PEOPLE:14806, DEGEN:30096, BABYDOGE:10407, ELON:9436, BONE:11865, NEIRO:32978,
+  MX:4041, FTT:4195, JOE:11396,
+  MANTA:29455, CTSI:5444, SYS:541, MOVR:9285, DGB:109, DCR:1168, MIM:162, USDX:6651,
+  RIO:4162, TOKEN:28299, TRADE:6198, CREDI:13256, GOLD:1421
+};
+
+const clusters = [
+  {cls:"tools",  color:"#7b8794", label:"Exchange", icon:"T",  assets:["BGB","OKB","LEO","KCS","GT","NEXO","SAFE","TWT","MX","FTT","WOO","JOE","COW","FIDA","BANANA","MASK","ARKM","ID","RLC","COTI"]},
+  {cls:"base",   color:"#3f6ed8", label:"Base Layers",        icon:"L1", assets:["BTC","ETH","SOL","BNB","ADA","TRX","AVAX","SUI","APT","TON","NEAR","ATOM","ICP","HBAR","ALGO","VET","ETC","SEI","TIA","CRO","KAS","FLOW","EGLD","IOTA","EOS","NEO","THETA","XMR","WBTC","WETH","XDC","XTZ","KAVA","MINA","ROSE","CSPR","INJ","RUNE","ZIL","ONE","QTUM","KDA","CFX","FTM","ASTR","GLMR","ZETA","CORE","NTRN","OSMO","XEC","LUNC","AXL","WEMIX","FLR","IOTX","RVN","KSM","WAVES"]},
+  {cls:"apps",   color:"#13966f", label:"DeFi",   icon:"A",  assets:["UNI","AAVE","MKR","SKY","COMP","SNX","CRV","MORPHO","JUP","RAY","CAKE","BAL","SUSHI","DYDX","GMX","1INCH","YFI","LQTY","ZRX","KNC","AERO","AEVO","EIGEN","W","REZ","ALT","RDNT","HFT","BNT","MAV","PERP","ALPHA","BADGER","RBN","LPT","AUDIO","NMR","OCEAN","ORAI"]},
+  {cls:"scaling",color:"#7147c4", label:"Scaling",             icon:"L2", assets:["ARB","OP","MNT","STRK","POL","IMX","STX","ZK","ZRO","METIS","LRC","SKL","BOBA","DYM","CELR","ASTR","GLMR","AXL","ZETA","MANTA","CTSI","SYS","MOVR","KSM"]},
+  {cls:"defi",   color:"#17a56b", label:"Yield / Staking",     icon:"Y",  assets:["LDO","RPL","JTO","ETHFI","PENDLE","ENA","CVX","FXS","SSV","FIDA","BNT","RDNT","MAV","COW","JOE","REZ","T","REN","KEEP","BADGER","ALPHA","MPL"]},
+  {cls:"infra",  color:"#596779", label:"Infrastructure",      icon:"I",  assets:["LINK","PYTH","GRT","FIL","AR","QNT","GNO","ENS","API3","BAND","UMA","ANKR","HNT","AKT","NIGHT","TRB","RIF","DENT","CELR","STORJ","SIA","SC","RSS3","POND","NKN","PHB","IO","NOS","JASMY","BLZ"]},
+  {cls:"rwa",    color:"#d7771c", label:"RWA",                  icon:"R",  assets:["ONDO","CFG","SYRUP","PAXG","XAUT","RSR","POLYX","CPOOL","GFI","TRU","MPL","USDY","MPLX","NXRA","DUSK","LTO","PRO","GOLD","RIO","TOKEN","CREDI","TRADE"]},
+  {cls:"stable", color:"#0b9488", label:"Stablecoins",          icon:"$",  assets:["USDT","USDC","DAI","USDE","TUSD","PYUSD","FDUSD","FRAX","GHO","USDS","LUSD","USDD","EURC","USDJ","SUSD","CUSD","OUSD","USDP","USTC","MIM","USDX"]},
+  {cls:"payments",color:"#3064d8",label:"Payments",             icon:"P",  assets:["XRP","XLM","LTC","DASH","ZBCN","CELO","NANO","BCH","XNO","XEC","IOTA","COTI","XDC","DGB","DCR"]},
+  {cls:"ai",     color:"#b44469", label:"AI / Gaming",          icon:"AI", assets:["RENDER","FET","TAO","WLD","VIRTUAL","GALA","SAND","MANA","AXS","ILV","CHZ","GMT","APE","BLUR","MAGIC","PRIME","BIGTIME","YGG","PYR","WAXP","ALICE","TLM","DAR","AURY","RON","SUPER","PORTAL","PIXEL","PHB","IO","NOS","ORAI"]},
+  {cls:"meme",   color:"#d05b45", label:"Meme",       icon:"M",  assets:["DOGE","SHIB","PEPE","BONK","WIF","FLOKI","POPCAT","BRETT","MOG","TURBO","MEME","BOME","SATS","LADYS","COQ","MYRO","SLERF","MEW","PEOPLE","DEGEN","BABYDOGE","ELON","BONE","NEIRO"]}
+];
+
+const sectorAnchors = {
+  base:{x:750,y:408},
+  tools:{x:750,y:120}, apps:{x:1050,y:175}, infra:{x:1235,y:320},
+  ai:{x:1235,y:496}, meme:{x:1050,y:640}, stable:{x:750,y:700},
+  payments:{x:450,y:640}, rwa:{x:265,y:496}, scaling:{x:265,y:320},
+  defi:{x:450,y:175}
+};
+
+const capValues = clusters.flatMap(c => c.assets.map(t => {
+  const m = assetMeta[t] || {}; return m.cap ?? fallbackCaps[t] ?? .35;
+}));
+const minLogCap = Math.min(...capValues.map(v => Math.log10(v + 1)));
+const maxLogCap = Math.max(...capValues.map(v => Math.log10(v + 1)));
+
+function metaFor(ticker, cluster){
+  const known = assetMeta[ticker] || {};
+  const name = known.name || ticker;
+  const cap = known.cap ?? fallbackCaps[ticker] ?? .35;
+  const desc = known.desc || `${name} is ${categoryDescriptions[cluster.label]}`;
+  return {name, cap, desc};
+}
+
+function logoSize(ticker, total, cluster){
+  const cap = metaFor(ticker, cluster).cap;
+  const norm = (Math.log10(cap + 1) - minLogCap) / (maxLogCap - minLogCap || 1);
+  const dense = total > 34;
+  const base = dense ? 22 : total > 20 ? 25 : 28;
+  const range = dense ? 50 : total > 20 ? 54 : 58;
+  return Math.round(base + Math.pow(norm, .82) * range);
+}
+
+function logoUrl(ticker){
+  return logoIds[ticker] ? `https://s2.coinmarketcap.com/static/img/coins/64x64/${logoIds[ticker]}.png` : "";
+}
+
+function formatCap(cap){
+  return cap >= 1000 ? `$${(cap/1000).toFixed(2)}T` : `$${cap < 10 ? cap.toFixed(1) : cap.toFixed(0)}B`;
+}
+
+function escapeHtml(s){
+  return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#039;");
+}
+
+function seeded(ticker, salt){
+  let h = 2166136261 ^ Math.imul(salt + 1, 2654435761);
+  for(const c of `${ticker}:${salt}`){
+    h ^= c.charCodeAt(0);
+    h = Math.imul(h, 16777619);
+  }
+  return (h >>> 0) / 4294967296;
+}
+
+function clamp(v, lo, hi){ return Math.max(lo, Math.min(hi, v)); }
+
+function clampNode(n){
+  n.x = clamp(n.x, n.r + 10, 1500 - n.r - 10);
+  n.y = clamp(n.y, n.r + 10, 815  - n.r - 10);
+}
+
+const PILL_ASSET_GAP = 12;
+const SECTION_LABEL_GAP = 112;
+const DRAG_ASSET_DAMPING = .18;
+const DRAG_SETTLE_STEPS = 4;
+const SECTOR_HOME_PULL = .026;
+const SECTOR_HOME_DAMPING = .82;
+
+function ellipseRadius(rx, ry, nx, ny){
+  return rx * ry / Math.sqrt((ry * nx) ** 2 + (rx * ny) ** 2);
+}
+
+function keepOutsideSectorPill(n, s, gap = PILL_ASSET_GAP){
+  let dx = n.x - s.x, dy = n.y - s.y;
+  let dist = Math.sqrt(dx * dx + dy * dy);
+  if(dist < .01){
+    const angle = n.angle ?? seeded(n.ticker || s.cluster.cls, 11) * Math.PI * 2;
+    dx = Math.cos(angle);
+    dy = Math.sin(angle);
+    dist = 1;
+  }
+
+  const nx = dx / dist, ny = dy / dist;
+  const rx = s.pillHalfW + n.r + gap;
+  const ry = s.pillHalfH + n.r + gap;
+  const minD = ellipseRadius(rx, ry, nx, ny);
+  if(dist >= minD) return false;
+
+  n.x = s.x + nx * minD;
+  n.y = s.y + ny * minD;
+  const inwardVelocity = n.vx * nx + n.vy * ny;
+  if(inwardVelocity < 0){
+    n.vx -= nx * inwardVelocity;
+    n.vy -= ny * inwardVelocity;
+  }
+  return true;
+}
+
+function keepOutsideAllPills(n, sectors){
+  let moved = false;
+  for(const s of sectors) moved = keepOutsideSectorPill(n, s) || moved;
+  return moved;
+}
+
+function dampSectorAssets(sector, state, factor = DRAG_ASSET_DAMPING){
+  for(const n of state.nodes){
+    if(n.sector !== sector || n.dragging) continue;
+    n.vx *= factor;
+    n.vy *= factor;
+  }
+}
+
+
+// ─── TOOLTIP ────────────────────────────────────────────────────────────────
+function moveTooltip(e){
+  const tip = document.getElementById("coin-tooltip");
+  const pad = 14, box = tip.getBoundingClientRect();
+  let x = e.clientX + 16, y = e.clientY + 16;
+  if(x + box.width + pad > window.innerWidth)  x = e.clientX - box.width - 16;
+  if(y + box.height + pad > window.innerHeight) y = e.clientY - box.height - 16;
+  tip.style.left = `${Math.max(pad,x)}px`;
+  tip.style.top  = `${Math.max(pad,y)}px`;
+}
+function showTooltip(e, ticker, cluster){
+  const tip = document.getElementById("coin-tooltip");
+  const meta = metaFor(ticker, cluster);
+  const src  = logoUrl(ticker);
+  tip.innerHTML = `
+    <div class="tip-head">
+      ${src ? `<img class="tip-logo" src="${src}" alt="${escapeHtml(ticker)}">` : `<div class="tip-logo"></div>`}
+      <div>
+        <div class="tip-title">${escapeHtml(meta.name)} <span style="color:var(--c)">${escapeHtml(ticker)}</span></div>
+        <div class="tip-meta"><span class="tip-category">${escapeHtml(cluster.label)}</span><span>${formatCap(meta.cap)} market cap</span></div>
+      </div>
+    </div>
+    <div class="tip-desc">${escapeHtml(meta.desc)}</div>`;
+  tip.style.setProperty("--c", cluster.color);
+  tip.classList.add("show");
+  tip.setAttribute("aria-hidden","false");
+  moveTooltip(e);
+}
+
+function showSectionTooltip(e, cluster){
+  const tip = document.getElementById("coin-tooltip");
+  const desc = sectionDescriptions[cluster.label] || categoryDescriptions[cluster.label] || "";
+  tip.innerHTML = `
+    <div class="tip-head">
+      <div class="section-mark">${escapeHtml(cluster.icon)}</div>
+      <div>
+        <div class="tip-title">${escapeHtml(cluster.label)}</div>
+        <div class="tip-meta"><span class="tip-category">Section overview</span><span>${cluster.assets.length} assets</span></div>
+      </div>
+    </div>
+    <div class="tip-desc">${escapeHtml(desc)}</div>`;
+  tip.style.setProperty("--c", cluster.color);
+  tip.classList.add("show");
+  tip.setAttribute("aria-hidden","false");
+  moveTooltip(e);
+}
+
+function hideTooltip(){
+  const tip = document.getElementById("coin-tooltip");
+  tip.classList.remove("show");
+  tip.setAttribute("aria-hidden","true");
+}
+
+// ─── PHYSICS ────────────────────────────────────────────────────────────────
+
+function repel(a, b, minD, str){
+  const dx = b.x - a.x, dy = b.y - a.y;
+  const dist = Math.sqrt(dx*dx + dy*dy) || .01;
+  if(dist >= minD) return;
+  const push = (minD - dist) / dist * str;
+  if(!a.dragging){ a.vx -= dx * push; a.vy -= dy * push; }
+  if(!b.dragging){ b.vx += dx * push; b.vy += dy * push; }
+}
+
+// ─── SIMULATION ─────────────────────────────────────────────────────────────
+// Asset layout: gravity toward sector center (not a ring/orbit).
+// Result is a filled blob. Y gravity 1.6× stronger → blob is wider than tall,
+// matching the pill shape. Large-cap gravity is stronger → stays closer to label.
+// Sector label keepout zone prevents assets covering the pill.
+// ────────────────────────────────────────────────────────────────────────────
+function simulateForce(state, steps = 1){
+  const {nodes, sectors} = state;
+  let totalSpeed = 0, count = 0;
+
+  for(let step = 0; step < steps; step++){
+
+    // 1. Sectors: gentle elastic home pull + soft inter-sector spacing
+    for(const s of sectors){
+      if(!s.dragging){
+        s.vx += (s.homeX - s.x) * SECTOR_HOME_PULL;
+        s.vy += (s.homeY - s.y) * SECTOR_HOME_PULL;
+      }
+    }
+    for(let i = 0; i < sectors.length; i++){
+      const a = sectors[i];
+      for(let j = i+1; j < sectors.length; j++){
+        const b = sectors[j];
+        const minD = Math.max(
+          a.labelRadius + b.labelRadius + SECTION_LABEL_GAP,
+          (a.influence + b.influence) * .58
+        );
+        repel(a, b, minD, .020);
+      }
+    }
+
+    // 2. Asset spring toward pill PERIMETER (not center).
+    //    - Assets are attracted to the nearest point on the pill edge ellipse.
+    //    - No asset pulled through the pill → no keepout oscillation.
+    //    - Asset-asset repulsion pushes overflow into outer layers.
+    //    - Result: dense cluster hugging the pill, multiple layers outward.
+    //    - Pill z-index stays above hover logos so labels remain readable.
+    for(const n of nodes){
+      if(n.dragging) continue;
+      const s  = n.sector;
+      const dx = n.x - s.x, dy = n.y - s.y;
+      // Gap = n.r + PILL_ASSET_GAP keeps logos close to the pill without covering it.
+      const pax = s.pillHalfW + n.r + PILL_ASSET_GAP;
+      const pay = s.pillHalfH + n.r + PILL_ASSET_GAP;
+
+      const n_  = s.cluster.assets.length;
+      const dist = Math.sqrt(dx*dx + dy*dy) || .01;
+      const nx = dx/dist, ny = dy/dist;
+
+      // Radial spring toward perimeter — zero tangential force, no left/right bias
+      const rPerim = pax * pay / Math.sqrt((pay*nx)**2 + (pax*ny)**2);
+      const err    = dist - rPerim;
+
+      // During sector drag, keep the original elastic follow with extra damping.
+      const kBase = s.dragging ? .075 : s.settleFrames > 0 ? .042 : .010;
+      const k = kBase / Math.pow(Math.max(10, n_) / 10, 0.38) * (.4 + n.capScore * 1.6);
+      n.vx -= nx * err * k;
+      n.vy -= ny * err * k;
+    }
+
+    // 3. Asset repulsion — same-sector spreads, cross-sector prevents intermingling
+    for(let i = 0; i < nodes.length; i++){
+      const a = nodes[i];
+      for(let j = i+1; j < nodes.length; j++){
+        const b    = nodes[j];
+        const same = a.sector === b.sector;
+        if(same){
+          const n_  = a.sector.cluster.assets.length;
+          const dragSoftening = (a.sector.dragging || a.sector.settleFrames > 0) ? .34 : 1;
+          const str = .62 * dragSoftening / Math.pow(Math.max(10, n_) / 10, 0.28);
+          repel(a, b, a.r + b.r + 5, str);
+        } else {
+          repel(a, b, a.r + b.r + 7, .44);
+        }
+      }
+    }
+
+    // 4. Sectors integrate
+    for(const s of sectors){
+      if(!s.dragging){ s.x += s.vx; s.y += s.vy; }
+      s.vx *= SECTOR_HOME_DAMPING; s.vy *= SECTOR_HOME_DAMPING;
+      clampNode(s);
+      totalSpeed += Math.abs(s.vx) + Math.abs(s.vy);
+      count++;
+    }
+
+    // 5. Assets integrate
+    for(const n of nodes){
+      if(!n.dragging){ n.x += n.vx; n.y += n.vy; }
+      const dragDamping = n.sector.dragging ? .56 : n.sector.settleFrames > 0 ? .72 : .90;
+      n.vx *= dragDamping; n.vy *= dragDamping;
+      clampNode(n);
+      if(!n.dragging){
+        keepOutsideAllPills(n, sectors);
+        clampNode(n);
+      }
+      totalSpeed += Math.abs(n.vx) + Math.abs(n.vy);
+      count++;
+    }
+
+    for(const s of sectors){
+      if(!s.dragging && s.settleFrames > 0) s.settleFrames--;
+    }
+  }
+
+  return count > 0 ? totalSpeed / count : 0;
+}
+
+// ─── SIMULATION LIFECYCLE ───────────────────────────────────────────────────
+function wakeSimulation(state){
+  state.active = true;
+  state.idleFrames = 0;
+  if(!state.raf) state.raf = requestAnimationFrame(() => tick(state));
+}
+
+function paintState(state){
+  state.sectors.forEach(s => {
+    s.el.style.left = `${s.x.toFixed(1)}px`;
+    s.el.style.top  = `${s.y.toFixed(1)}px`;
+  });
+  state.nodes.forEach(n => {
+    if(!n.el) return;
+    n.el.style.setProperty("--x", `${n.x.toFixed(1)}px`);
+    n.el.style.setProperty("--y", `${n.y.toFixed(1)}px`);
+  });
+}
+
+function tick(state){
+  state.raf = 0;
+  if(!state.active) return;
+  const speed = simulateForce(state, state.idleFrames < 8 ? 2 : 1);
+  paintState(state);
+  const dragging = state.sectors.some(s => s.dragging) || state.nodes.some(n => n.dragging);
+  const idleSpeed = dragging ? .025 : .06;
+  const idleLimit = dragging ? 10 : 55;
+  if(speed < idleSpeed) state.idleFrames++;
+  else state.idleFrames = 0;
+  if(state.idleFrames > idleLimit){ state.active = false; return; }
+  state.raf = requestAnimationFrame(() => tick(state));
+}
+
+// ─── DRAG ───────────────────────────────────────────────────────────────────
+function enableDrag(node, state, getEl){
+  getEl().addEventListener("pointerdown", e => {
+    if(e.button && e.button !== 0) return;
+    e.preventDefault();
+    getEl().setPointerCapture(e.pointerId);
+    getEl().classList.add("dragging");
+    hideTooltip();
+    node.dragging = true; node.vx = 0; node.vy = 0;
+    if(node.type === "sector"){
+      node.settleFrames = 0;
+      dampSectorAssets(node, state, 0);
+      paintState(state);
+    } else {
+      wakeSimulation(state);
+    }
+    const rect = () => document.querySelector(".ecosystem").getBoundingClientRect();
+    const startRect = rect();
+    const grabOffsetX = e.clientX - startRect.left - node.x;
+    const grabOffsetY = e.clientY - startRect.top - node.y;
+    let moved = false;
+    const move = ev => {
+      const r  = rect();
+      const prevX = node.x, prevY = node.y;
+      node.x = ev.clientX - r.left - grabOffsetX;
+      node.y = ev.clientY - r.top  - grabOffsetY;
+      clampNode(node);
+      moved = moved || Math.hypot(node.x - prevX, node.y - prevY) > .1;
+      if(node.type === "sector") simulateForce(state, DRAG_SETTLE_STEPS);
+      paintState(state);
+      wakeSimulation(state);
+    };
+    const up = () => {
+      node.dragging = false;
+      if(node.type === "sector"){
+        // Keep the original home anchor so dropped sections glide back into place.
+        if(moved) node.settleFrames = 26;
+      }
+      getEl().classList.remove("dragging");
+      getEl().releasePointerCapture(e.pointerId);
+      getEl().removeEventListener("pointermove", move);
+      getEl().removeEventListener("pointerup", up);
+      getEl().removeEventListener("pointercancel", up);
+      if(node.type !== "sector" || moved) wakeSimulation(state);
+      else paintState(state);
+    };
+    getEl().addEventListener("pointermove", move);
+    getEl().addEventListener("pointerup", up);
+    getEl().addEventListener("pointercancel", up);
+  });
+}
+
+// ─── RENDER ─────────────────────────────────────────────────────────────────
+function sectorInfluenceFor(cluster){
+  const sizes = cluster.assets.map(t => logoSize(t, cluster.assets.length, cluster));
+  const area  = sizes.reduce((sum, s) => sum + Math.PI * (s/2+5)**2, 0);
+  return clamp(Math.sqrt(area / Math.PI) * 1.38 + 44, 126, 255);
+}
+
+function render(){
+  const root = document.getElementById("clusters");
+  const seen = new Set();
+  const sectors = [], nodes = [];
+
+  clusters.forEach(cluster => {
+    const anchor = sectorAnchors[cluster.cls];
+    const label  = document.createElement("div");
+    label.className = "bubble-label";
+    label.style.setProperty("--c", cluster.color);
+    label.style.left = `${anchor.x}px`;
+    label.style.top  = `${anchor.y}px`;
+    label.innerHTML  = cluster.label;
+    const sectionDesc = sectionDescriptions[cluster.label] || categoryDescriptions[cluster.label] || "";
+    label.dataset.description = sectionDesc;
+    label.setAttribute("aria-label", `${cluster.label}: ${sectionDesc}`);
+    label.addEventListener("mouseenter", e => showSectionTooltip(e, cluster));
+    label.addEventListener("mousemove",  moveTooltip);
+    label.addEventListener("mouseleave", hideTooltip);
+    root.appendChild(label);
+    // Pill dimensions: prefer live measurement, fall back to text-length estimate
+    // (offsetWidth can be 0 before first reflow in some browsers)
+    const estW      = cluster.label.length * 9.5 + 36;   // ~9.5px per bold char + padding
+    const measW     = label.offsetWidth  > 40 ? label.offsetWidth  : estW;
+    const measH     = label.offsetHeight > 10 ? label.offsetHeight : 36;
+    const pillHalfW = measW / 2 + 12;
+    const pillHalfH = measH / 2 +  8;
+
+    const sector = {
+      type:"sector", cluster, el:label,
+      x:anchor.x, y:anchor.y, homeX:anchor.x, homeY:anchor.y,
+      vx:0, vy:0, r:58, labelRadius:72,
+      pillHalfW, pillHalfH,
+      influence:sectorInfluenceFor(cluster),
+      settleFrames:0,
+      dragging:false
+    };
+    sectors.push(sector);
+  });
+
+  clusters.forEach(cluster => {
+    const sector = sectors.find(s => s.cluster.cls === cluster.cls);
+    cluster.assets.forEach(ticker => {
+      if(seen.has(ticker)) return;
+      seen.add(ticker);
+      const size  = logoSize(ticker, cluster.assets.length, cluster);
+      const score = (Math.log10(metaFor(ticker,cluster).cap + 1) - minLogCap) / (maxLogCap - minLogCap || 1);
+      // Initial scatter: random position in elliptical area around label
+      // Physics will settle assets into final positions via pre-sim
+      const angle  = seeded(ticker, 1) * Math.PI * 2;
+      // Start at perimeter + random outward offset so pre-sim converges fast
+      const pax0   = sector.pillHalfW + size/2 + PILL_ASSET_GAP;
+      const pay0   = sector.pillHalfH + size/2 + PILL_ASSET_GAP;
+      const layer0 = 1.0 + seeded(ticker, 3) * 1.5;   // 1–2.5× perimeter distance
+      nodes.push({
+        type:"asset", ticker, cluster, sector,
+        size, r:size/2,
+        x: sector.x + Math.cos(angle) * pax0 * layer0,
+        y: sector.y + Math.sin(angle) * pay0 * layer0,
+        vx:0, vy:0, dragging:false,
+        angle,
+        seedRadius: seeded(ticker, 2),
+        capScore: score
+      });
+    });
+  });
+
+  // Pre-settle layout (more steps = cleaner initial state)
+  const state = {sectors, nodes, active:false, idleFrames:0, raf:0};
+  for(let i = 0; i < 2400; i++) simulateForce(state, 1);
+  nodes.forEach(n => {
+    keepOutsideAllPills(n, sectors);
+    n.vx = 0;
+    n.vy = 0;
+  });
+  sectors.forEach(s => {
+    s.vx = 0;
+    s.vy = 0;
+  });
+
+  // Build DOM after physics are settled
+  nodes.forEach(node => {
+    const item = document.createElement("div");
+    item.className = "logo";
+    item.style.setProperty("--s", `${node.size}px`);
+    item.style.setProperty("--c", node.cluster.color);
+    item.style.setProperty("--x", `${node.x.toFixed(1)}px`);
+    item.style.setProperty("--y", `${node.y.toFixed(1)}px`);
+    item.setAttribute("aria-label", node.ticker);
+    item.tabIndex = 0;
+    const src = logoUrl(node.ticker);
+    item.innerHTML = src
+      ? `<img src="${src}" alt="${node.ticker}" loading="lazy" onerror="this.parentElement.classList.add('failed')"><span>${node.ticker.slice(0,4)}</span>`
+      : `<span style="display:grid">${node.ticker.slice(0,4)}</span>`;
+    item.addEventListener("mouseenter", e => showTooltip(e, node.ticker, node.cluster));
+    item.addEventListener("mousemove",  moveTooltip);
+    item.addEventListener("mouseleave", hideTooltip);
+    item.addEventListener("focus",      e => showTooltip(e, node.ticker, node.cluster));
+    item.addEventListener("blur",       hideTooltip);
+    root.appendChild(item);
+    node.el = item;
+    enableDrag(node, state, () => item);
+  });
+
+  sectors.forEach(sector => enableDrag(sector, state, () => sector.el));
+  paintState(state);
+}
+
+render();
+</script>
+</body>
+</html>
+</template>
+
+<script>
+let frameworkMapInited=false;
+function initFrameworkMap(){
+  const frame=document.getElementById('framework-map-frame');
+  if(!frame||frameworkMapInited)return;
+  const tpl=document.getElementById('framework-map-srcdoc');
+  frame.srcdoc=tpl?tpl.innerHTML.trim():'';
+  frameworkMapInited=true;
+}
+initFrameworkMap();
+</script>
+
+<script>
+/* ══ STATIC DATA ══ */
+const SECTORS = {
+  'L1 Platforms':          {label:'L1 Platforms',     color:'#f7931a',bg:'#fff8f0',desc:'Foundation-layer blockchains powering smart contracts, DeFi, and ecosystem development. Core exposure to on-chain adoption and chain-level network effects. BTC and ETH are the bedrock; newer L1s compete for developer and user activity.'},
+  'DeFi Core':             {label:'DeFi Core',         color:'#00d395',bg:'#edfaf4',desc:'Permissionless lending, trading, and financial primitives. The on-chain equivalents of exchanges, banks, and market makers — operating 24/7 without intermediaries. TVL and fee revenue are the key operating metrics.'},
+  'Payments & Settlement': {label:'Payments',          color:'#3861fb',bg:'#eff3ff',desc:'Fast, borderless value transfer and cross-border settlement infrastructure. Crypto rails offer 24/7 global settlement that outpaces legacy correspondent banking on cost and speed. XRP leads with deep institutional partnerships.'},
+  'Identity & Social':     {label:'Identity & Social', color:'#ef5350',bg:'#fff5f5',desc:'Digital identity, fan engagement, gaming, and social layer primitives. Early-stage exposure to on-chain consumer and community applications. High optionality, higher risk — sized accordingly.'},
+  'AI & Compute':          {label:'AI & Compute',      color:'#9945ff',bg:'#f7f0ff',desc:'Decentralized GPU networks and AI coordination protocols creating open markets for compute — at the intersection of crypto incentive design and surging AI infrastructure demand.'},
+  'Oracles & Data':        {label:'Oracles & Data',    color:'#2775ca',bg:'#eff5ff',desc:'Verified real-world data feeds for smart contracts. Critical middleware: every DeFi protocol relying on price feeds depends on this layer. Chainlink\'s dominant position creates a deep network-effect moat.'},
+  'DeFi Staking/Yield':    {label:'Staking & Yield',   color:'#f97316',bg:'#fff7ed',desc:'Liquid staking, restaking, and yield tokenization protocols. Abstracts staking complexity, unlocks capital efficiency on locked assets, and creates new yield markets. LSD/LRT ecosystem exposure.'},
+  'Infrastructure':        {label:'Infrastructure',    color:'#64748b',bg:'#f8fafc',desc:'Storage, interoperability, privacy, and exchange infrastructure. Diversified exposure to critical blockchain plumbing without single-chain dependency. Lower beta, more defensive within crypto.'},
+  'BTC/ETH L2s':           {label:'BTC/ETH L2s',       color:'#7c3aed',bg:'#f5f0ff',desc:'Ethereum scaling via optimistic and ZK rollups — inheriting L1 security while delivering lower fees and higher throughput. The battleground for application activity as Ethereum matures.'},
+};
+const DESCS={BTC:'Proof-of-work digital gold; the global crypto reserve asset with the highest liquidity and institutional adoption. A foundational benchmark for digital asset market structure.',ETH:'Programmable smart contract platform and foundation of DeFi, NFTs, and the L2 ecosystem. Transitioning to deflationary issuance via EIP-1559; ultrasound money thesis.',SOL:'High-throughput L1 optimized for speed and low fees. A thriving DeFi and consumer crypto ecosystem; primary competitor to Ethereum for developer and user activity.',XRP:'Enterprise-grade payments network focused on cross-border settlement with 100+ financial institution partnerships via RippleNet. SEC lawsuit resolution unlocked institutional re-engagement.',LINK:'The dominant oracle network providing verified real-world data to 1,000+ DeFi protocols across all major chains. Critical infrastructure with deep network-effect moats.',SUI:'Move-language L1 from ex-Meta engineers; object-centric data model designed for high parallelism and consumer-grade UX with sub-second finality.',AVAX:'L1 with customizable subnet architecture enabling chain-specific environments. Strong in institutional tokenization and gaming verticals; hosts major TradFi pilots.',LTC:'One of the earliest Bitcoin forks with 12+ years of proven uptime. Broad exchange and merchant adoption; simple payments use case without smart contract complexity.',CRO:'Native token of the Cronos EVM chain. Powers the Crypto.com ecosystem including exchange, card, and consumer DeFi products serving 80M+ users.',MNT:'Governance and gas token of Mantle Network, a modular Ethereum L2 backed by the former BitDAO treasury. Focus on gaming and institutional DeFi.',UNI:'Governance token of Uniswap, the leading DEX by cumulative volume. Near-monopoly in on-chain spot trading; V4 introduces custom liquidity hooks and fee structures.',ONDO:'Tokenized US Treasuries and money market funds on-chain. The leading RWA protocol bridging TradFi yield to DeFi; regulatory clarity a key catalyst.',SKY:'Governance of Sky (formerly MakerDAO), issuer of USDS/DAI — the oldest and most battle-tested decentralized stablecoin with $6B+ in circulation.',BGB:'Exchange token of Bitget, a top-5 global derivatives exchange. Revenue sharing, fee discounts, and ecosystem utility tied to platform growth.',AAVE:'Blue-chip lending protocol with $10B+ TVL across 12+ networks. Expanding with GHO stablecoin and cross-chain liquidity. The money market of DeFi.',WLD:'Iris-scan proof-of-personhood by Sam Altman. Building the world\'s largest verified human identity network on-chain; dual utility as AI-era identity layer.',RENDER:'Decentralized GPU rendering network connecting idle GPU owners with creators and AI workloads. Network effects strongest in 3D/VFX; pivoting into broader AI inference.',MORPHO:'Modular lending protocol built on top of Aave/Compound, improving rates for both borrowers and lenders via peer-to-peer matching. Composable credit infrastructure.',ATOM:'The "internet of blockchains" hub. IBC protocol enables sovereign blockchains to communicate; ATOM captures ecosystem fees and secures interchain security consumers.',ENA:'USDe — synthetic dollar backed by delta-neutral ETH derivatives. Ethena generates yield from funding rates and distributes it to stakers; sUSDe is the yield-bearing form.',QNT:'Overledger OS enabling interoperability between enterprise blockchains and legacy banking systems. Deep SWIFT partnership; positioned for regulated institutional blockchain adoption.',APT:'Move-language L1 from Aptos Labs (ex-Meta). Prioritizes safety and reliability for large-scale consumer applications; strong in Southeast Asia and gaming.',FIL:'Decentralized storage network incentivizing miners to offer verifiable, persistent data storage. Complementary to IPFS; growing use in AI data storage and archiving.',JUP:'The leading DEX aggregator on Solana, routing trades across all Solana DEXs for optimal execution. Also expanding into perps and a Solana-native stablecoin.',ARB:'Leading Ethereum optimistic rollup by TVL and activity. Rich DeFi ecosystem and Arbitrum Orbit framework enabling custom L3 chains. Strong sequencer revenue.',FET:'AI agent coordination network (ASI Alliance with OCEAN + AGIX). Enables autonomous AI agents to transact on-chain; largest AI-crypto merger to date.',VIRTUAL:'Infrastructure for creating and deploying autonomous AI agents on-chain. The leading agent launchpad on Base; AI-agent-as-a-product business model.',NIGHT:'Privacy-focused sidechain of Cardano enabling confidential DeFi and regulatory-compliant private transactions via ZK proofs.',SEI:'Purpose-built L1 optimized for trading with native order matching engine and parallelized execution. Targeting on-chain exchanges and high-frequency DeFi.',STX:'Bitcoin L2 enabling smart contracts and DeFi anchored to Bitcoin\'s security via the sBTC peg and Proof of Transfer consensus mechanism.',TIA:'Modular data availability layer. Rollups post transaction data to Celestia rather than Ethereum, significantly reducing costs. First modular DA blockchain in production.',CRV:'Governance token of Curve Finance, the dominant DEX for stablecoin and pegged-asset swaps. The "veCRV wars" make it central to DeFi liquidity routing.',ETHFI:'Liquid restaking protocol built on EigenLayer. Generates additional yield from native ETH staking by enabling restaked ETH; largest LRT by TVL.',IMX:'Ethereum L2 specialized for NFTs and gaming using StarkEx ZK proofs. Zero gas for NFT minting with Ethereum security; home to Gods Unchained and others.',PENDLE:'Interest rate derivatives protocol allowing users to separate and trade yield from principal. Pioneering on-chain yield tokenization; core infrastructure for LSD yield markets.',PYTH:'High-frequency oracle network publishing real-time price feeds from 90+ first-party providers including Binance, OKX, and Jump. Lower latency than Chainlink for DeFi.',GRT:'Decentralized indexing protocol for querying blockchain data via GraphQL. Critical Web3 infrastructure described as "Google for blockchains"; core infra for dApp development.',GNO:'Governance token of the Gnosis ecosystem: Gnosis Chain (formerly xDAI), Safe multisig, and Gnosis Pay Visa debit card for real-world spending.',LDO:'Governance of Lido, the largest liquid staking protocol managing $20B+ in stETH and ~30% of all staked ETH. Beneficiary of restaking narrative via EigenLayer.',ZBCN:'Payments and streaming protocol on Solana enabling per-second salary payments, subscriptions, and real-time institutional treasury management.',OP:'Governance token of the Optimism Superchain. Sequencer fee revenue funds RetroPGF grants and ecosystem public goods. Base, Zora, and others use OP Stack.',STRK:'Governance and gas token of StarkNet, Ethereum\'s ZK-rollup using STARK proofs for computational integrity at scale. Fastest-growing zkEVM ecosystem.',JTO:'Governance of Jito Labs, the largest MEV-aware liquid staking protocol on Solana. JitoSOL captures MEV (block tips) revenue for stakers in addition to base yield.',ENS:'Ethereum Name Service — decentralized naming for wallets, websites, and on-chain identity. The standard for human-readable crypto addresses; ~3M registered names.',SYRUP:'Governance of Maple Finance, an institutional credit marketplace offering undercollateralized on-chain loans to vetted institutions. Bridges TradFi credit to DeFi.',POL:'Governance of the AggLayer, Polygon\'s ZK interoperability framework unifying L2s with shared liquidity. Former MATIC; rebranded for the ZK-centric modular future.',RAY:'Governance of Raydium, the leading AMM and concentrated liquidity DEX on Solana. Captures fees from the majority of Solana DeFi trading volume.',CHZ:'Fan token infrastructure for 150+ professional sports clubs globally. Socios.com enables voting rights and exclusive fan engagement via on-chain tokens.',SAND:'Governance token of The Sandbox metaverse platform. 200+ brand partnerships including Adidas, HSBC, and Warner Music. Virtual real estate and user-generated content.',AXS:'Governance of Axie Infinity, the pioneering play-to-earn NFT game. Ronin sidechain processes gaming transactions at near-zero cost; rebuilding after a 2021-era peak.'};
+const TV={BTC:'BINANCE:BTCUSDT',ETH:'BINANCE:ETHUSDT',SOL:'BINANCE:SOLUSDT',XRP:'BINANCE:XRPUSDT',LINK:'BINANCE:LINKUSDT',SUI:'BINANCE:SUIUSDT',AVAX:'BINANCE:AVAXUSDT',LTC:'BINANCE:LTCUSDT',CRO:'BINANCE:CROUSDT',MNT:'BYBIT:MNTUSDT',UNI:'BINANCE:UNIUSDT',ONDO:'BINANCE:ONDOUSDT',SKY:'COINBASE:SKYUSD',BGB:'BITGET:BGBUSDT',AAVE:'BINANCE:AAVEUSDT',WLD:'BINANCE:WLDUSDT',MORPHO:'COINBASE:MORPHOUSD',ATOM:'BINANCE:ATOMUSDT',RENDER:'BINANCE:RENDERUSDT',ENA:'BINANCE:ENAUSDT',QNT:'BINANCE:QNTUSDT',APT:'BINANCE:APTUSDT',FIL:'BINANCE:FILUSDT',JUP:'BINANCE:JUPUSDT',ARB:'BINANCE:ARBUSDT',FET:'BINANCE:FETUSDT',VIRTUAL:'BINANCE:VIRTUALUSDT',NIGHT:'BINANCE:NIGHTUSDT',SEI:'BINANCE:SEIUSDT',STX:'BINANCE:STXUSDT',TIA:'BINANCE:TIAUSDT',CRV:'BINANCE:CRVUSDT',ETHFI:'BINANCE:ETHFIUSDT',IMX:'BINANCE:IMXUSDT',PENDLE:'BINANCE:PENDLEUSDT',PYTH:'BINANCE:PYTHUSDT',GRT:'BINANCE:GRTUSDT',GNO:'KRAKEN:GNOUSD',LDO:'BINANCE:LDOUSDT',ZBCN:'BYBIT:ZBCNUSDT',OP:'BINANCE:OPUSDT',STRK:'BINANCE:STRKUSDT',JTO:'BINANCE:JTOUSDT',ENS:'BINANCE:ENSUSDT',SYRUP:'BINANCE:SYRUPUSDT',POL:'BINANCE:POLUSDT',RAY:'BINANCE:RAYUSDT',CHZ:'BINANCE:CHZUSDT',SAND:'BINANCE:SANDUSDT',AXS:'BINANCE:AXSUSDT'};
+const DATA=[
+  {t:'BTC',n:'Bitcoin',              s:'L1 Platforms',         m:1330000000000,p:'$64,197'},
+  {t:'ETH',n:'Ethereum',             s:'L1 Platforms',         m:208000000000, p:'$1,733'},
+  {t:'XRP',n:'Ripple',               s:'Payments & Settlement',m:71170000000,  p:'$1.16'},
+  {t:'SOL',n:'Solana',               s:'L1 Platforms',         m:42260000000,  p:'$72.81'},
+  {t:'LINK',n:'Chainlink',           s:'Oracles & Data',       m:6000000000,   p:'$8.02'},
+  {t:'SUI',n:'Sui',                  s:'L1 Platforms',         m:4210000000,   p:'$1.05'},
+  {t:'AVAX',n:'Avalanche',           s:'L1 Platforms',         m:2760000000,   p:'$6.37'},
+  {t:'LTC',n:'Litecoin',             s:'Payments & Settlement',m:4080000000,   p:'$52.87'},
+  {t:'CRO',n:'Cronos',               s:'L1 Platforms',         m:3070000000,   p:'$0.0684'},
+  {t:'MNT',n:'Mantle',               s:'L1 Platforms',         m:2140000000,   p:'$0.6468'},
+  {t:'UNI',n:'Uniswap',              s:'DeFi Core',            m:2140000000,   p:'$3.36'},
+  {t:'ONDO',n:'Ondo Finance',        s:'DeFi Staking/Yield',   m:2030000000,   p:'$0.4171'},
+  {t:'SKY',n:'Sky (Maker)',           s:'DeFi Core',            m:1630000000,   p:'$0.0703'},
+  {t:'BGB',n:'Bitget Token',         s:'Infrastructure',       m:1410000000,   p:'$2.02'},
+  {t:'AAVE',n:'Aave',                s:'DeFi Core',            m:1350000000,   p:'$87.95'},
+  {t:'WLD',n:'Worldcoin',            s:'Identity & Social',    m:1320000000,   p:'$0.3856'},
+  {t:'RENDER',n:'Render',            s:'AI & Compute',         m:1250000000,   p:'$2.41'},
+  {t:'MORPHO',n:'Morpho',            s:'DeFi Core',            m:1120000000,   p:'$2.28'},
+  {t:'ATOM',n:'Cosmos',              s:'L1 Platforms',         m:1160000000,   p:'$2.28'},
+  {t:'ENA',n:'Ethena',               s:'DeFi Core',            m:927000000,    p:'$0.1027'},
+  {t:'QNT',n:'Quant',                s:'Infrastructure',       m:934000000,    p:'$77.38'},
+  {t:'APT',n:'Aptos',                s:'L1 Platforms',         m:820000000,    p:'$0.9999'},
+  {t:'FIL',n:'Filecoin',             s:'Infrastructure',       m:817000000,    p:'$1.04'},
+  {t:'JUP',n:'Jupiter',              s:'DeFi Core',            m:693000000,    p:'$0.2088'},
+  {t:'ARB',n:'Arbitrum',             s:'BTC/ETH L2s',          m:700000000,    p:'$0.1119'},
+  {t:'FET',n:'Fetch.ai / ASI',       s:'AI & Compute',         m:570000000,    p:'$0.2522'},
+  {t:'VIRTUAL',n:'Virtual Protocol', s:'AI & Compute',         m:558000000,    p:'$0.8499'},
+  {t:'NIGHT',n:'Midnight',           s:'Infrastructure',       m:561000000,    p:'$0.0338'},
+  {t:'SEI',n:'Sei',                  s:'L1 Platforms',         m:469000000,    p:'$0.0660'},
+  {t:'STX',n:'Stacks',               s:'L1 Platforms',         m:457000000,    p:'$0.2520'},
+  {t:'TIA',n:'Celestia',             s:'L1 Platforms',         m:443000000,    p:'$0.4813'},
+  {t:'CRV',n:'Curve DAO',            s:'DeFi Core',            m:342000000,    p:'$0.2262'},
+  {t:'ETHFI',n:'ether.fi',           s:'DeFi Staking/Yield',   m:344000000,    p:'$0.3908'},
+  {t:'IMX',n:'Immutable X',          s:'BTC/ETH L2s',          m:344000000,    p:'$0.1720'},
+  {t:'PENDLE',n:'Pendle',            s:'DeFi Core',            m:333000000,    p:'$1.95'},
+  {t:'PYTH',n:'Pyth Network',        s:'Oracles & Data',       m:332000000,    p:'$0.0421'},
+  {t:'GRT',n:'The Graph',            s:'Oracles & Data',       m:324000000,    p:'$0.0299'},
+  {t:'GNO',n:'Gnosis',               s:'Infrastructure',       m:314000000,    p:'$119.10'},
+  {t:'LDO',n:'Lido DAO',             s:'DeFi Staking/Yield',   m:301000000,    p:'$0.3541'},
+  {t:'ZBCN',n:'Zebec Network',       s:'Payments & Settlement',m:292000000,    p:'$0.0029'},
+  {t:'OP',n:'Optimism',              s:'BTC/ETH L2s',          m:287000000,    p:'$0.1333'},
+  {t:'STRK',n:'StarkNet',            s:'BTC/ETH L2s',          m:264000000,    p:'$0.0420'},
+  {t:'JTO',n:'Jito',                 s:'DeFi Staking/Yield',   m:258000000,    p:'$0.5422'},
+  {t:'ENS',n:'Ethereum Name Service',s:'Infrastructure',       m:258000000,    p:'$6.38'},
+  {t:'SYRUP',n:'Maple Finance',      s:'DeFi Core',            m:241000000,    p:'$0.2023'},
+  {t:'POL',n:'Polygon',              s:'BTC/ETH L2s',          m:989000000,    p:'$0.0929'},
+  {t:'RAY',n:'Raydium',              s:'DeFi Core',            m:209000000,    p:'$0.7755'},
+  {t:'CHZ',n:'Chiliz',               s:'Identity & Social',    m:373000000,    p:'$0.0359'},
+  {t:'SAND',n:'The Sandbox',         s:'Identity & Social',    m:213000000,    p:'$0.0724'},
+  {t:'AXS',n:'Axie Infinity',        s:'Identity & Social',    m:200000000,    p:'$1.15'},
+].sort((a,b)=>b.m-a.m);
+DATA.forEach((d,i)=>d.r=i+1);
+
+/* ── CHART / TIME-SERIES DATA ── */
+const MONTHS=["Jun '24","Jul '24","Aug '24","Sep '24","Oct '24","Nov '24","Dec '24","Jan '25","Feb '25","Mar '25","Apr '25","May '25"];
+
+// 30-day daily market cap (Apr 29–May 28, 2025, $T)
+const CMC_DAYS_30=(()=>{const r=[];for(let i=0;i<30;i++){const d=new Date(2025,3,29);d.setDate(d.getDate()+i);r.push(d.toLocaleDateString('en-US',{month:'short',day:'numeric'}));}return r;})();
+const CMC_MC_30D=[2.55,2.58,2.62,2.68,2.72,2.69,2.65,2.61,2.64,2.70,2.74,2.76,2.73,2.70,2.67,2.64,2.61,2.58,2.55,2.59,2.62,2.60,2.57,2.54,2.51,2.48,2.47,2.50,2.48,2.45];
+const CMC_VOL_30D=[65,78,82,95,88,72,68,75,82,91,105,88,79,72,68,65,62,58,71,85,92,78,68,62,58,54,65,72,68,86];
+const CMC_MC_1Y=[1.80,1.72,1.68,1.85,2.10,3.20,3.50,2.90,2.60,2.30,2.10,2.45];
+const CMC_VOL_1Y=[42,40,38,50,65,105,120,90,76,68,60,86];
+
+// Market dominance % (monthly) — used for "All" stacked view + Ex normalization
+const DOM={
+  BTC: [69.0,67.5,71.0,69.5,67.0,59.5,62.0,67.5,71.5,74.0,76.5,77.6],
+  ETH: [17.0,18.0,15.5,16.5,18.5,21.5,20.0,17.0,14.5,12.5,12.5,12.8],
+  XRP: [ 3.5, 3.5, 3.0, 3.0, 3.5, 6.0, 5.5, 5.0, 4.5, 4.2, 4.0, 4.2],
+  SOL: [ 5.5, 5.5, 6.0, 6.0, 5.5, 7.5, 7.0, 5.5, 4.5, 4.0, 3.0, 2.5],
+  LINK:[0.35,0.33,0.32,0.31,0.30,0.28,0.26,0.25,0.28,0.30,0.32,0.35],
+  AVAX:[0.25,0.24,0.22,0.21,0.20,0.18,0.22,0.24,0.22,0.20,0.21,0.20],
+};
+// Ex-BTC/ETH total (% of total market)
+const EX_TOT=MONTHS.map((_,i)=>+(100-DOM.BTC[i]-DOM.ETH[i]).toFixed(2));
+// Normalize each coin within Ex-BTC/ETH universe
+const EX_NORM={};['XRP','SOL','LINK','AVAX'].forEach(c=>{EX_NORM[c]=MONTHS.map((_,i)=>+(DOM[c][i]/EX_TOT[i]*100).toFixed(1));});
+const EX_OTHERS=MONTHS.map((_,i)=>Math.max(0,+(100-EX_NORM.XRP[i]-EX_NORM.SOL[i]-EX_NORM.LINK[i]-EX_NORM.AVAX[i]).toFixed(1)));
+const ALL_OTHERS=MONTHS.map((_,i)=>+(100-DOM.BTC[i]-DOM.ETH[i]-DOM.XRP[i]-DOM.SOL[i]).toFixed(1));
+
+// 30-day annualized volatility %
+const VOL={
+  BTC: [55,58,52,62,68,72,65,78,70,62,54,47],
+  ETH: [68,74,65,76,82,88,78,95,85,75,65,58],
+  SOL: [90,98,88,105,112,118,105,125,115,98,85,75],
+  XRP: [62,65,60,70,75,95,88,80,75,68,62,58],
+  LINK:[72,78,70,80,85,90,82,98,88,78,70,62],
+  AVAX:[80,85,78,88,92,95,88,105,95,85,75,68],
+};
+const COIN_COLORS={BTC:'#f7931a',ETH:'#627eea',XRP:'#3461fb',SOL:'#9945ff',LINK:'#2a5ada',AVAX:'#e84142'};
+const ALL_COINS=['BTC','ETH','XRP','SOL','LINK','AVAX'];
+
+// Sparkline data for ticker strip (20 relative data points)
+const SPARKLINES={
+  BTC: [77,78,80,82,84,82,80,79,81,83,85,83,81,79,78,79,81,80,79,78],
+  ETH: [95,94,93,92,90,89,88,89,90,91,90,89,88,87,86,85,84,83,82,81],
+  SOL: [100,98,96,94,92,90,88,87,88,89,90,88,86,84,82,81,82,83,84,85],
+  XRP: [100,102,104,106,105,104,103,102,104,106,107,106,105,104,103,104,105,106,107,108],
+  LINK:[100,101,102,101,100,101,102,103,104,103,102,101,100,101,102,103,104,105,106,107],
+};
+const TICKER_ASSETS=[
+  {t:'BTC', pct:'+4.2%',pos:true},
+  {t:'ETH', pct:'-0.6%',pos:false},
+  {t:'SOL', pct:'-2.2%',pos:false},
+  {t:'XRP', pct:'+1.2%',pos:true},
+  {t:'LINK',pct:'+0.8%',pos:true},
+];
+
+/* ── UTILS ── */
+const total  =DATA.reduce((s,a)=>s+a.m,0);
+const exTotal=DATA.filter(a=>a.t!=='BTC'&&a.t!=='ETH').reduce((s,a)=>s+a.m,0);
+const secTot={},secTotEx={};
+DATA.forEach(a=>{secTot[a.s]=(secTot[a.s]||0)+a.m;if(a.t!=='BTC'&&a.t!=='ETH')secTotEx[a.s]=(secTotEx[a.s]||0)+a.m;});
+function fmt(v){if(v>=1e12)return'$'+(v/1e12).toFixed(2)+'T';if(v>=1e9)return'$'+(v/1e9).toFixed(2)+'B';return'$'+(v/1e6).toFixed(0)+'M';}
+function pct(v,b){return(v/b*100).toFixed(1)+'%'}
+
+// SVG sparkline generator
+function sparkSVG(pts,color,w=80,h=38){
+  const mn=Math.min(...pts),mx=Math.max(...pts),rng=mx-mn||1,pad=3;
+  const coords=pts.map((v,i)=>{
+    const x=pad+(i/(pts.length-1))*(w-2*pad);
+    const y=pad+(1-(v-mn)/rng)*(h-2*pad);
+    return x.toFixed(1)+','+y.toFixed(1);
+  }).join(' ');
+  return`<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" style="display:block"><polyline points="${coords}" fill="none" stroke="${color}" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/></svg>`;
+}
+
+/* TOPBAR fill */
+['hdr-tot','k-total'].forEach(id=>document.getElementById(id).textContent=fmt(total));
+['hdr-btc','k-btc'].forEach(id=>document.getElementById(id).textContent=pct(DATA[0].m,total));
+['hdr-eth','k-eth'].forEach(id=>document.getElementById(id).textContent=pct(DATA[1].m,total));
+['hdr-ex','k-ex'].forEach(id=>document.getElementById(id).textContent=fmt(exTotal));
+
+/* ── CHART.JS SETUP ── */
+Chart.defaults.font.family="'Inter',system-ui,sans-serif";
+Chart.defaults.color='#8a96aa';
+Chart.defaults.maintainAspectRatio=false;
+const DESKTOP_ZOOM=window.matchMedia('(min-width:901px)').matches?1.1:1;
+Chart.defaults.devicePixelRatio=(window.devicePixelRatio||1)*DESKTOP_ZOOM;
+const zoomPointerFix={id:'zoomPointerFix',beforeEvent(chart,args){
+  if(DESKTOP_ZOOM===1)return;
+  const e=args.event;
+  if(typeof e.x==='number')e.x/=DESKTOP_ZOOM;
+  if(typeof e.y==='number')e.y/=DESKTOP_ZOOM;
+}};
+const crosshair={id:'crosshair',beforeDatasetsDraw(chart){
+  if(!chart.tooltip._active?.length)return;
+  const ctx=chart.ctx,x=chart.tooltip._active[0].element.x;
+  const{top,bottom}=chart.chartArea;
+  ctx.save();ctx.beginPath();ctx.moveTo(x,top);ctx.lineTo(x,bottom);
+  ctx.lineWidth=1;ctx.strokeStyle='#d8dce8';ctx.setLineDash([4,3]);ctx.stroke();ctx.restore();
+}};
+Chart.register(zoomPointerFix,crosshair);
+const TOOLTIP_BASE={mode:'index',intersect:false,backgroundColor:'#fff',titleColor:'#0d1421',titleFont:{size:11,weight:'700'},bodyColor:'#3d4f6e',bodyFont:{size:11},borderColor:'#e8ecf2',borderWidth:1,padding:{x:12,y:10},boxPadding:5,usePointStyle:true,pointStyle:'circle'};
+
+/* -- TAB SWITCHING -- */
+function switchTab(id,btn){
+  document.querySelectorAll('.pane').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('pane-'+id).classList.add('active');
+  if(!btn)btn=document.querySelector(`.tab-btn[data-tab="${id}"]`);
+  if(btn)btn.classList.add('active');
+  if(id==='overview')initFrameworkMap();
+  if(id==='dashboard')initOverview();
+  if(id==='sectors')initSectors();
+}
+
+/* ============== DASHBOARD ============== */
+let overviewInited=false;
+let donutChart=null,mktCapChart=null,compChart=null,volChart=null;
+let donutMode='ex',mktCapPeriod='30d',mktCapCoin='TOTAL',compMode='ex',tvInterval='W',tvTicker='BTC';
+const activeVolCoins=new Set(['BTC','ETH','SOL','XRP']);
+const activeCompCoins=new Set(['BTC','ETH','XRP','SOL','LINK','AVAX']);
+
+function initOverview(){
+  if(overviewInited)return;overviewInited=true;
+  buildAssetStrip();
+  buildMarketTable();
+  buildMktCapSelect();
+  buildDonut('ex');
+  buildMktCapChart('30d');
+  buildCompTog();buildCompChart();
+  buildVolTog();buildVolChart();
+  buildKlineDropdown();
+  loadTV(()=>renderTV('BTC','W'));
+}
+
+/* ── Asset ticker strip ── */
+function buildAssetStrip(){
+  const el=document.getElementById('asset-strip');
+  TICKER_ASSETS.forEach(({t,pct:pc,pos})=>{
+    const d=DATA.find(x=>x.t===t);
+    const color=pos?'#16c784':'#ea3943';
+    const card=document.createElement('div');
+    card.className='asc';
+    card.onclick=()=>{switchTab('sectors');setTimeout(()=>openAsset(t),80);};
+    card.innerHTML=`<div>
+      <div class="asc-nm">${d.n}</div>
+      <div class="asc-sym" style="color:${COIN_COLORS[t]||'#0d1421'}">${t}</div>
+      <div class="asc-pr">${d.p}</div>
+      <div class="asc-pc" style="color:${color}">${pc}</div>
+    </div>
+    <div class="asc-spark">${sparkSVG(SPARKLINES[t],color)}</div>`;
+    el.appendChild(card);
+  });
+}
+
+function coinColor(ticker){
+  const a=DATA.find(x=>x.t===ticker);
+  return COIN_COLORS[ticker] || (a&&SECTORS[a.s]?.color) || '#64748b';
+}
+function buildMarketTable(){
+  const tbl=document.getElementById('market-table');
+  if(!tbl)return;
+  tbl.innerHTML='<thead><tr><th style="width:34px">#</th><th>Asset</th><th class="r">Price</th><th class="r">Market Cap</th><th class="r">Market Share</th><th class="r">Sector</th></tr></thead>';
+  const tbody=document.createElement('tbody');
+  DATA.slice(0,12).forEach(a=>{
+    const meta=SECTORS[a.s],share=a.m/total*100;
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td><span class="rk">${a.r}</span></td>
+      <td><div class="ac"><div class="aico" style="background:${meta.bg};color:${meta.color};border-color:${meta.color}40">${a.t.slice(0,3)}</div>
+        <div><div class="asym">${a.t}</div><div class="aname-s">${a.n}</div></div></div></td>
+      <td class="r mono" style="color:#58667e">${a.p}</td>
+      <td class="r mono">${fmt(a.m)}</td>
+      <td class="r"><div class="share-cell"><div class="share-bar"><div class="share-fill" style="width:${Math.min(100,share).toFixed(1)}%;background:${coinColor(a.t)}"></div></div><span class="wpct">${share.toFixed(1)}%</span></div></td>
+      <td class="r" style="font-size:11px;color:${meta.color};font-weight:700">${meta.label}</td>`;
+    tr.onclick=()=>{switchTab('sectors');setTimeout(()=>openAsset(a.t),60);};
+    tbody.appendChild(tr);
+  });
+  tbl.appendChild(tbody);
+}
+function buildMktCapSelect(){
+  const sel=document.getElementById('mktcap-coin');
+  if(!sel)return;
+  sel.innerHTML='<option value="TOTAL">Total Market</option>';
+  DATA.forEach(a=>{
+    const o=document.createElement('option');
+    o.value=a.t;o.textContent=`${a.t} - ${a.n}`;
+    sel.appendChild(o);
+  });
+  sel.value=mktCapCoin;
+}
+function syntheticSeries(ticker, labels){
+  const a=DATA.find(x=>x.t===ticker);
+  if(!a)return labels.map(()=>0);
+  const seed=ticker.split('').reduce((s,ch)=>s+ch.charCodeAt(0),0);
+  const base=a.m/1e9;
+  const amp=.08+(seed%7)/100;
+  const drift=(seed%2?1:-1)*.018;
+  return labels.map((_,i)=>{
+    const wave=Math.sin((i+seed%5)*.82)*amp+Math.cos((i+seed%3)*.41)*amp*.45;
+    const trend=(i/(Math.max(1,labels.length-1))-.5)*drift;
+    return +(base*(1+wave+trend)).toFixed(2);
+  });
+}
+
+/* ── Donut ── */
+function buildDonut(mode){
+  donutMode=mode;
+  const base=mode==='ex'?exTotal:total;
+  const tots=mode==='ex'?secTotEx:secTot;
+  const sk=Object.keys(SECTORS).filter(k=>tots[k]).sort((a,b)=>(tots[b]||0)-(tots[a]||0));
+  document.getElementById('donut-cv').textContent=mode==='ex'?48:50;
+  if(donutChart){donutChart.destroy();donutChart=null;}
+  donutChart=new Chart(document.getElementById('donut-canvas'),{
+    type:'doughnut',
+    data:{labels:sk.map(k=>SECTORS[k].label),datasets:[{
+      data:sk.map(k=>tots[k]||0),
+      backgroundColor:sk.map(k=>SECTORS[k].color+'cc'),
+      borderColor:sk.map(k=>SECTORS[k].color),
+      borderWidth:1.5,hoverOffset:6,
+    }]},
+    options:{cutout:'68%',maintainAspectRatio:false,animation:{duration:350},plugins:{
+      legend:{display:false},
+      tooltip:{mode:'nearest',intersect:true,backgroundColor:'#fff',titleColor:'#0d1421',titleFont:{size:11,weight:'700'},bodyColor:'#3d4f6e',bodyFont:{size:11},borderColor:'#e8ecf2',borderWidth:1,padding:{x:12,y:8},boxPadding:4,usePointStyle:true,pointStyle:'circle',
+        callbacks:{title:ctx=>SECTORS[sk[ctx[0].dataIndex]]?.label||'',label:ctx=>{const m=tots[sk[ctx.dataIndex]]||0;return`  ${fmt(m)}  ·  ${pct(m,base)}`;}}}
+    }}
+  });
+  const leg=document.getElementById('donut-legend');leg.innerHTML='';
+  sk.forEach(k=>{
+    const m=tots[k]||0;
+    const r=document.createElement('div');r.className='dl-row';
+    r.onclick=()=>{switchTab('sectors');setTimeout(()=>openSector(k),60)};
+    r.innerHTML=`<div class="dl-left"><div class="dl-dot" style="background:${SECTORS[k].color}"></div>
+      <div><div class="dl-name">${SECTORS[k].label}</div>
+      <div class="dl-sub">${fmt(m)} · ${pct(m,base)}</div></div></div>`;
+    leg.appendChild(r);
+  });
+}
+function setDonutMode(m,btn){document.querySelectorAll('#donut-tog .tog-btn').forEach(b=>b.classList.toggle('on',b===btn));buildDonut(m);}
+
+/* ── CMC Market Cap chart ── */
+function buildMktCapChart(period){
+  mktCapPeriod=period;
+  const labels=period==='30d'?CMC_DAYS_30:MONTHS;
+  const mc=period==='30d'?CMC_MC_30D:CMC_MC_1Y;
+  const vols=period==='30d'?CMC_VOL_30D:CMC_VOL_1Y;
+  const startV=mc[0],lastV=mc[mc.length-1],lastVol=vols[vols.length-1];
+  document.getElementById('mktcap-big').textContent='$'+lastV.toFixed(2)+'T';
+  document.getElementById('mktcap-vol').textContent='$'+lastVol+'.0B';
+  const datasets=[{label:'Total Market Cap',data:mc,fill:true,tension:.3,borderWidth:1.8,pointRadius:0,pointHoverRadius:5,yAxisID:'y',
+    borderColor:'#16c784',backgroundColor:'rgba(22,199,132,.08)'}];
+  if(mktCapCoin!=='TOTAL'){
+    datasets.push({label:mktCapCoin+' Market Cap',data:syntheticSeries(mktCapCoin,labels),fill:false,tension:.35,borderWidth:2,pointRadius:0,pointHoverRadius:5,yAxisID:'y1',
+      borderColor:coinColor(mktCapCoin),backgroundColor:coinColor(mktCapCoin)});
+  }
+  if(mktCapChart){mktCapChart.destroy();mktCapChart=null;}
+  mktCapChart=new Chart(document.getElementById('mktcap-canvas'),{
+    type:'line',
+    data:{labels,datasets},
+    options:{maintainAspectRatio:false,animation:{duration:300},interaction:{mode:'index',intersect:false},
+      plugins:{legend:{display:true,position:'top',align:'start',labels:{boxWidth:8,boxHeight:8,padding:12,font:{size:11},usePointStyle:true,pointStyle:'circle'}},
+        tooltip:{...TOOLTIP_BASE,callbacks:{title:ctx=>labels[ctx[0].dataIndex],label:ctx=>{
+          if(ctx.dataset.yAxisID==='y1')return`  ${ctx.dataset.label}: $${ctx.raw.toFixed(2)}B`;
+          return`  ${ctx.dataset.label}: $${ctx.raw.toFixed(2)}T`;
+        }}}},
+      scales:{
+        x:{grid:{display:false},ticks:{font:{size:10},maxTicksLimit:period==='30d'?7:12}},
+        y:{position:'right',grid:{color:'rgba(0,0,0,.04)'},ticks:{callback:v=>'$'+v.toFixed(1)+'T',font:{size:10}},
+          min:Math.min(...mc)*0.97,max:Math.max(...mc)*1.015},
+        y1:{display:mktCapCoin!=='TOTAL',position:'left',grid:{drawOnChartArea:false},ticks:{callback:v=>'$'+v+'B',font:{size:10}}}
+      }
+    }
+  });
+}
+function setMktCapPeriod(p,btn){document.querySelectorAll('#mktcap-tog .tog-btn').forEach(b=>b.classList.toggle('on',b===btn));buildMktCapChart(p);}
+function setMktCapCoin(ticker){mktCapCoin=ticker;buildMktCapChart(mktCapPeriod);}
+
+/* ── Asset Composition — stacked area (CMC "by Chain" style) ── */
+function buildCompTog(){
+  const el=document.getElementById('comp-tog');if(!el)return;
+  el.innerHTML='<span class="coin-picker-label">Coins</span>';
+  ALL_COINS.forEach(c=>{
+    const btn=document.createElement('span');
+    btn.className='ctog'+(activeCompCoins.has(c)?' on':'');
+    btn.style.setProperty('--cc',coinColor(c));
+    btn.textContent=c;
+    btn.onclick=()=>{
+      if(activeCompCoins.has(c)){if(activeCompCoins.size<=1)return;activeCompCoins.delete(c);btn.classList.remove('on');}
+      else{activeCompCoins.add(c);btn.classList.add('on');}
+      buildCompChart();
+    };
+    el.appendChild(btn);
+  });
+}
+function buildCompChart(){
+  const isEx=compMode==='ex';
+  document.getElementById('comp-note').textContent=isEx
+    ?'Ex-BTC/ETH · % of ex-BTC/ETH market (Jun \'24 – May \'25)'
+    :'All assets · % of total crypto market cap';
+
+  let datasets;
+  if(isEx){
+    // Bottom→top: XRP (biggest), SOL, LINK, AVAX, Others (gray)
+    datasets=[
+      {label:'XRP',  data:EX_NORM.XRP,  backgroundColor:COIN_COLORS.XRP+'99', borderColor:COIN_COLORS.XRP},
+      {label:'SOL',  data:EX_NORM.SOL,  backgroundColor:COIN_COLORS.SOL+'99', borderColor:COIN_COLORS.SOL},
+      {label:'LINK', data:EX_NORM.LINK, backgroundColor:COIN_COLORS.LINK+'99',borderColor:COIN_COLORS.LINK},
+      {label:'AVAX', data:EX_NORM.AVAX, backgroundColor:COIN_COLORS.AVAX+'99',borderColor:COIN_COLORS.AVAX},
+      {label:'Others',data:EX_OTHERS,   backgroundColor:'#94a3b877',           borderColor:'#94a3b8'},
+    ];
+  } else {
+    // Bottom→top: BTC (biggest), ETH, XRP, SOL, Others
+    datasets=[
+      {label:'BTC',   data:DOM.BTC,     backgroundColor:COIN_COLORS.BTC+'88', borderColor:COIN_COLORS.BTC},
+      {label:'ETH',   data:DOM.ETH,     backgroundColor:COIN_COLORS.ETH+'88', borderColor:COIN_COLORS.ETH},
+      {label:'XRP',   data:DOM.XRP,     backgroundColor:COIN_COLORS.XRP+'88', borderColor:COIN_COLORS.XRP},
+      {label:'SOL',   data:DOM.SOL,     backgroundColor:COIN_COLORS.SOL+'88', borderColor:COIN_COLORS.SOL},
+      {label:'Others',data:ALL_OTHERS,  backgroundColor:'#94a3b866',           borderColor:'#94a3b8'},
+    ];
+  }
+  datasets=datasets.filter(d=>d.label==='Others'||activeCompCoins.has(d.label));
+  datasets=datasets.map(d=>({...d,fill:true,tension:.4,borderWidth:0.8,pointRadius:0,pointHoverRadius:4}));
+
+  if(compChart){compChart.destroy();compChart=null;}
+  compChart=new Chart(document.getElementById('comp-canvas'),{
+    type:'line',
+    data:{labels:MONTHS,datasets},
+    options:{maintainAspectRatio:false,
+      animation:{duration:350},
+      interaction:{mode:'index',intersect:false},
+      plugins:{
+        legend:{display:true,position:'top',align:'start',
+          labels:{boxWidth:9,boxHeight:9,padding:12,font:{size:11},usePointStyle:true,pointStyle:'rect'}},
+        tooltip:{...TOOLTIP_BASE,callbacks:{label:ctx=>` ${ctx.dataset.label}: ${ctx.raw}%`}}
+      },
+      scales:{
+        x:{grid:{display:false},ticks:{font:{size:10}}},
+        y:{stacked:true,grid:{color:'rgba(0,0,0,.04)'},
+          ticks:{callback:v=>v+'%',font:{size:10}},min:0,max:100}
+      }
+    }
+  });
+}
+function setCompMode(m,btn){compMode=m;document.querySelectorAll('#comp-mode-tog .tog-btn').forEach(b=>b.classList.toggle('on',b===btn));buildCompChart();}
+
+/* ── Volatility with coin toggles ── */
+function buildVolTog(){
+  const el=document.getElementById('vol-tog');el.innerHTML='';
+  ALL_COINS.forEach(c=>{
+    const btn=document.createElement('span');
+    btn.className='ctog'+(activeVolCoins.has(c)?' on':'');
+    btn.style.setProperty('--cc',COIN_COLORS[c]);
+    btn.textContent=c;
+    btn.onclick=()=>{
+      if(activeVolCoins.has(c)){if(activeVolCoins.size<=1)return;activeVolCoins.delete(c);btn.classList.remove('on');}
+      else{activeVolCoins.add(c);btn.classList.add('on');}
+      buildVolChart();
+    };
+    el.appendChild(btn);
+  });
+}
+function buildVolChart(){
+  const datasets=ALL_COINS.filter(c=>activeVolCoins.has(c)).map(c=>({
+    label:c,data:VOL[c],fill:false,
+    borderColor:COIN_COLORS[c],borderWidth:2,tension:.4,pointRadius:0,pointHoverRadius:4,
+  }));
+  if(volChart){volChart.destroy();volChart=null;}
+  volChart=new Chart(document.getElementById('vol-canvas'),{
+    type:'line',
+    data:{labels:MONTHS,datasets},
+    options:{maintainAspectRatio:false,
+      animation:{duration:300},interaction:{mode:'index',intersect:false},
+      plugins:{legend:{display:false},tooltip:{...TOOLTIP_BASE,callbacks:{label:ctx=>` ${ctx.dataset.label}: ${ctx.raw}% ann. vol`}}},
+      scales:{
+        x:{grid:{display:false},ticks:{font:{size:10}}},
+        y:{grid:{color:'rgba(0,0,0,.04)'},ticks:{callback:v=>v+'%',font:{size:10}},
+          title:{display:true,text:'Annualized Vol (%)',font:{size:10},color:'#8a96aa'}}
+      }
+    }
+  });
+}
+
+/* ── TradingView ── */
+function buildKlineDropdown(){
+  const sel=document.getElementById('kline-sel');
+  const bySec={};DATA.forEach(a=>{(bySec[a.s]=bySec[a.s]||[]).push(a)});
+  Object.keys(SECTORS).forEach(sk=>{
+    if(!bySec[sk])return;
+    const og=document.createElement('optgroup');og.label=SECTORS[sk].label;
+    bySec[sk].sort((a,b)=>b.m-a.m).forEach(a=>{
+      const o=document.createElement('option');o.value=a.t;o.textContent=`${a.t}  —  ${a.n}`;og.appendChild(o);
+    });sel.appendChild(og);
+  });
+}
+let tvScriptLoaded=false;
+function loadTV(cb){
+  if(typeof TradingView!=='undefined'){cb();return;}
+  if(tvScriptLoaded){setTimeout(()=>loadTV(cb),200);return;}
+  tvScriptLoaded=true;
+  const s=document.createElement('script');s.src='https://s3.tradingview.com/tv.js';s.onload=cb;document.head.appendChild(s);
+}
+function renderTV(ticker,interval,containerId='tv-embed'){
+  tvTicker=ticker;tvInterval=interval;
+  if(containerId==='tv-embed')document.getElementById('kline-sel').value=ticker;
+  const c=document.getElementById(containerId);c.innerHTML=`<div class="tv-placeholder">Loading ${ticker} price chart...</div>`;
+  try{new TradingView.widget({container_id:containerId,symbol:TV[ticker]||`BINANCE:${ticker}USDT`,interval,autosize:true,theme:'light',style:'1',locale:'en',toolbar_bg:'#ffffff',enable_publishing:false,allow_symbol_change:false,save_image:false,withdateranges:true});}
+  catch(e){c.innerHTML=`<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#8a96aa;font-size:12px">Chart unavailable for ${ticker}</div>`;}
+}
+function klineChange(){renderTV(document.getElementById('kline-sel').value,tvInterval);}
+function setIv(iv,el){document.querySelectorAll('.kiv').forEach(b=>b.classList.toggle('on',b===el));tvInterval=iv;renderTV(tvTicker,iv);}
+
+/* ══════════════ SECTORS ══════════════ */
+let sectorsInited=false,activeSector=null,activeAsset=null;
+function initSectors(){
+  if(sectorsInited)return;sectorsInited=true;
+  const grid=document.getElementById('sector-grid-el');
+  Object.keys(SECTORS).sort((a,b)=>(secTot[b]||0)-(secTot[a]||0)).forEach(k=>{
+    const meta=SECTORS[k],items=DATA.filter(a=>a.s===k).sort((a,b)=>b.m-a.m);
+    const sm=secTot[k]||0;
+    const card=document.createElement('div');
+    card.className='sc-card';card.style.borderTopColor=meta.color;
+    card.innerHTML=`<div class="sc-name" style="color:${meta.color}">${meta.label}<span class="sc-cnt" style="background:${meta.bg};color:${meta.color}">${items.length}</span></div>
+      <div class="sc-desc">${meta.desc}</div>
+      <div class="sc-foot">
+        <div><div class="sc-stat-l">Mkt Cap</div><div class="sc-stat-v">${fmt(sm)}</div></div>
+        <div><div class="sc-stat-l">Share</div><div class="sc-stat-v">${pct(sm,total)}</div></div>
+        <div><div class="sc-stat-l">Leader</div><div class="sc-stat-v" style="color:${meta.color}">${items[0].t}</div></div>
+      </div>`;
+    card.onclick=()=>openSector(k);grid.appendChild(card);
+  });
+}
+function goGrid(){activeSector=null;activeAsset=null;document.getElementById('sv-grid').classList.remove('hidden');document.getElementById('sv-sector').classList.add('hidden');document.getElementById('sv-asset').classList.add('hidden');}
+function openSector(k){
+  activeSector=k;
+  const meta=SECTORS[k],items=DATA.filter(a=>a.s===k).sort((a,b)=>b.m-a.m),sm=secTot[k]||0;
+  document.getElementById('crumb-sector').textContent=meta.label;
+  document.getElementById('sd-hdr-el').innerHTML=`
+    <div class="sd-title" style="color:${meta.color}">${meta.label}</div>
+    <div class="sd-desc-text">${meta.desc}</div>
+    <div class="sd-stats">
+      <div><div class="sd-stat-l">Sector Mkt Cap</div><div class="sd-stat-v">${fmt(sm)}</div></div>
+      <div><div class="sd-stat-l">Market Share</div><div class="sd-stat-v">${pct(sm,total)}</div></div>
+      <div><div class="sd-stat-l">Assets</div><div class="sd-stat-v">${items.length}</div></div>
+      <div><div class="sd-stat-l">Largest</div><div class="sd-stat-v" style="color:${meta.color}">${items[0].t}</div></div>
+    </div>`;
+  const tbl=document.getElementById('sd-table');
+  tbl.innerHTML=`<thead><tr><th style="width:28px">#</th><th>Asset</th><th>Thesis</th><th class="r">Mkt Cap</th><th class="r">Price</th><th class="r">Sector Share</th></tr></thead>`;
+  const tbody=document.createElement('tbody');
+  items.forEach((a,i)=>{
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td><span class="rk">${i+1}</span></td>
+      <td><div class="ac"><div class="aico" style="background:${meta.bg};color:${meta.color};border-color:${meta.color}40">${a.t.slice(0,3)}</div>
+        <div><div class="asym">${a.t}</div><div class="aname-s">${a.n}</div></div></div></td>
+      <td style="font-size:11px;color:#58667e;max-width:320px;line-height:1.45">${(DESCS[a.t]||'').split('.')[0]}.</td>
+      <td class="r mono">${fmt(a.m)}</td><td class="r mono" style="color:#8a96aa">${a.p}</td>
+      <td class="r"><div class="wbar-wrap"><div class="wbar"><div class="wbar-fill" style="width:${Math.min(40,a.m/sm*80).toFixed(0)}px;background:${meta.color}"></div></div>
+        <span class="wpct">${pct(a.m,sm)}</span></div></td>`;
+    tr.onclick=()=>openAsset(a.t);tbody.appendChild(tr);
+  });
+  tbl.appendChild(tbody);
+  document.getElementById('sv-grid').classList.add('hidden');
+  document.getElementById('sv-sector').classList.remove('hidden');
+  document.getElementById('sv-asset').classList.add('hidden');
+}
+function goSector(){document.getElementById('sv-grid').classList.add('hidden');document.getElementById('sv-sector').classList.remove('hidden');document.getElementById('sv-asset').classList.add('hidden');}
+function assetNarrative(a,meta){
+  const share=pct(a.m,total),sectorShare=pct(a.m,secTot[a.s]||1);
+  return `
+    <div class="about-section">
+      <div class="about-section-title">Overview</div>
+      <div>${DESCS[a.t]||'This asset is part of the covered digital asset universe.'}</div>
+    </div>
+    <div class="about-section">
+      <div class="about-section-title">Market Role</div>
+      <div>${a.n} sits in the ${meta.label} category, which represents ${pct(secTot[a.s]||0,total)} of the covered market cap. Within that category, ${a.t} accounts for ${sectorShare}, making it ${a.r<=5?'one of the primary market-share drivers':'a smaller but still relevant contributor'} in the sector view.</div>
+    </div>
+    <div class="about-section">
+      <div class="about-section-title">What to Watch</div>
+      <div>For client education, focus on market cap rank, liquidity, sector concentration, and how the asset's use case connects to real network activity. Current market share is ${share}; changes in this share help show whether attention and capital are consolidating into larger networks or rotating toward smaller thematic assets.</div>
+    </div>
+    <div class="about-section">
+      <div class="about-section-title">Client Framing</div>
+      <div>This page is intended as a market-structure explainer: price is only one signal, while market cap, dominance, sector share, volatility, and the asset's role in the crypto stack give a more complete picture of why the asset matters.</div>
+    </div>`;
+}
+function openAsset(ticker){
+  activeAsset=ticker;
+  const a=DATA.find(d=>d.t===ticker),meta=SECTORS[a.s];
+  document.getElementById('crumb-back-sector').textContent=meta.label;
+  document.getElementById('crumb-asset').textContent=`${a.t} — ${a.n}`;
+  document.getElementById('asset-hdr-el').innerHTML=`
+    <div class="asset-hdr-top">
+      <div class="asset-name-row">
+        <div class="asset-ico" style="background:${meta.bg};color:${meta.color};border-color:${meta.color}">${a.t.slice(0,3)}</div>
+        <div><div class="asset-ticker">${a.t}</div><div class="asset-fullname">${a.n}</div></div>
+      </div>
+      <div class="asset-price-col"><div class="asset-price">${a.p}</div><div class="asset-mc">Market Cap: ${fmt(a.m)}</div></div>
+    </div>
+    <div class="asset-pills">
+      <span class="pill" style="background:${meta.bg};color:${meta.color}"><span class="pdot" style="background:${meta.color}"></span>${meta.label}</span>
+      <span class="pill rank-pill">Rank #${a.r} by Mkt Cap</span>
+      <span class="pill rank-pill">Market Share: ${pct(a.m,total)}</span>
+    </div>`;
+  document.getElementById('asset-about').innerHTML=`<div class="about-title">Asset Overview</div><div class="about-text">${assetNarrative(a,meta)}</div>`;
+  document.getElementById('asset-stats').innerHTML=`<div class="about-title" style="margin-bottom:12px">Key Statistics</div>
+    ${[['Ticker',a.t],['Full Name',a.n],['Sector',meta.label],['Market Cap',fmt(a.m)],['Price (USD)',a.p],['Market Cap Rank',`#${a.r}`],['Market Share',pct(a.m,total)],['Sector Share',pct(a.m,secTot[a.s]||1)]]
+      .map(([l,v])=>`<div class="stat-row"><span class="stat-lbl">${l}</span><span class="stat-val">${v}</span></div>`).join('')}`;
+  document.getElementById('sv-grid').classList.add('hidden');
+  document.getElementById('sv-sector').classList.add('hidden');
+  document.getElementById('sv-asset').classList.remove('hidden');
+  document.getElementById('tv-asset').innerHTML='';
+  loadTV(()=>renderTV(ticker,tvInterval,'tv-asset'));
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+initFrameworkMap();
+</script>
+</body>
+</html>
