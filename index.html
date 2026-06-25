@@ -322,7 +322,7 @@ table.at tbody tr:last-child td{border-bottom:none}
       <div class="overview-copy">
         <div class="overview-eyebrow">Supported by Anchorage</div>
         <h1>Anchorage Universe</h1>
-        <p>The full Anchorage-supported universe — <strong>683 assets</strong> classified across 13 sectors — shown as a market-cap-weighted bubble map. Toggle the filter to narrow to the <strong>54 kept</strong> assets that pass the selection rules and feed the factor model.</p>
+        <p>The full Anchorage-supported universe — <strong>683 assets</strong> classified across 13 sectors — shown as a market-cap-weighted bubble map. Each circle is sized by market value. Toggle the filter to narrow to the <strong>54 kept</strong> assets that pass our research screen.</p>
       </div>
       <button class="overview-toggle" id="overview-filter-toggle" type="button" aria-pressed="false">Show 54 kept</button>
     </div>
@@ -342,7 +342,7 @@ table.at tbody tr:last-child td{border-bottom:none}
         </div>
         <div class="overview-rule-card">
           <strong>Why it matters</strong>
-          <span>The 54 kept assets are the ones scored by the factor model and eligible for the portfolio. The full 683 stays visible so the screening is transparent — you can see exactly what was considered and what was filtered out.</span>
+          <span>The 54 kept assets are the ones our research process studies most closely. The full 683 stays visible so the screening is transparent — you can see exactly what was considered and what was filtered out. This is educational context, not a recommendation to buy any asset.</span>
         </div>
       </aside>
     </div>
@@ -421,7 +421,7 @@ table.at tbody tr:last-child td{border-bottom:none}
   <!-- Volatility with coin toggles -->
   <div class="card chart-card">
     <div class="card-hdr">
-      <div><span class="card-title">30-Day Annualized Volatility</span><div class="chart-sub">Hover for selected-coin legend</div></div>
+      <div><span class="card-title">30-Day Annualized Volatility</span><div class="chart-sub" id="vol-sub">Hover for selected-coin legend</div></div>
       <div class="coin-picker" id="vol-tog"></div>
     </div>
     <div class="ch220"><canvas id="vol-canvas"></canvas></div>
@@ -441,7 +441,7 @@ table.at tbody tr:last-child td{border-bottom:none}
     <div class="card-hdr" style="margin-bottom:4px">
       <div>
         <div class="card-title">Crypto Market Cap</div>
-        <div class="chart-sub">Hover for the floating legend. Select a coin to compare.</div>
+        <div class="chart-sub" id="mktcap-sub">Hover for the floating legend. Select a coin to compare.</div>
         <div class="mktcap-top">
           <span class="mktcap-big" id="mktcap-big">—</span>
           <span class="mktcap-sub">Volume (24h)&nbsp; <strong id="mktcap-vol">—</strong></span>
@@ -1439,41 +1439,16 @@ const DATA=[
 ].sort((a,b)=>b.m-a.m);
 DATA.forEach((d,i)=>d.r=i+1);
 
-/* ── CHART / TIME-SERIES DATA ── */
-const MONTHS=["Jun '24","Jul '24","Aug '24","Sep '24","Oct '24","Nov '24","Dec '24","Jan '25","Feb '25","Mar '25","Apr '25","May '25"];
-
-// 30-day daily market cap (Apr 29–May 28, 2025, $T)
-const CMC_DAYS_30=(()=>{const r=[];for(let i=0;i<30;i++){const d=new Date(2025,3,29);d.setDate(d.getDate()+i);r.push(d.toLocaleDateString('en-US',{month:'short',day:'numeric'}));}return r;})();
-const CMC_MC_30D=[2.55,2.58,2.62,2.68,2.72,2.69,2.65,2.61,2.64,2.70,2.74,2.76,2.73,2.70,2.67,2.64,2.61,2.58,2.55,2.59,2.62,2.60,2.57,2.54,2.51,2.48,2.47,2.50,2.48,2.45];
-const CMC_VOL_30D=[65,78,82,95,88,72,68,75,82,91,105,88,79,72,68,65,62,58,71,85,92,78,68,62,58,54,65,72,68,86];
-const CMC_MC_1Y=[1.80,1.72,1.68,1.85,2.10,3.20,3.50,2.90,2.60,2.30,2.10,2.45];
-const CMC_VOL_1Y=[42,40,38,50,65,105,120,90,76,68,60,86];
-
-// Market dominance % (monthly) — used for "All" stacked view + Ex normalization
-const DOM={
-  BTC: [69.0,67.5,71.0,69.5,67.0,59.5,62.0,67.5,71.5,74.0,76.5,77.6],
-  ETH: [17.0,18.0,15.5,16.5,18.5,21.5,20.0,17.0,14.5,12.5,12.5,12.8],
-  XRP: [ 3.5, 3.5, 3.0, 3.0, 3.5, 6.0, 5.5, 5.0, 4.5, 4.2, 4.0, 4.2],
-  SOL: [ 5.5, 5.5, 6.0, 6.0, 5.5, 7.5, 7.0, 5.5, 4.5, 4.0, 3.0, 2.5],
-  LINK:[0.35,0.33,0.32,0.31,0.30,0.28,0.26,0.25,0.28,0.30,0.32,0.35],
-  AVAX:[0.25,0.24,0.22,0.21,0.20,0.18,0.22,0.24,0.22,0.20,0.21,0.20],
-};
-// Ex-BTC/ETH total (% of total market)
-const EX_TOT=MONTHS.map((_,i)=>+(100-DOM.BTC[i]-DOM.ETH[i]).toFixed(2));
-// Normalize each coin within Ex-BTC/ETH universe
-const EX_NORM={};['XRP','SOL','LINK','AVAX'].forEach(c=>{EX_NORM[c]=MONTHS.map((_,i)=>+(DOM[c][i]/EX_TOT[i]*100).toFixed(1));});
-const EX_OTHERS=MONTHS.map((_,i)=>Math.max(0,+(100-EX_NORM.XRP[i]-EX_NORM.SOL[i]-EX_NORM.LINK[i]-EX_NORM.AVAX[i]).toFixed(1)));
-const ALL_OTHERS=MONTHS.map((_,i)=>+(100-DOM.BTC[i]-DOM.ETH[i]-DOM.XRP[i]-DOM.SOL[i]).toFixed(1));
-
-// 30-day annualized volatility %
-const VOL={
-  BTC: [55,58,52,62,68,72,65,78,70,62,54,47],
-  ETH: [68,74,65,76,82,88,78,95,85,75,65,58],
-  SOL: [90,98,88,105,112,118,105,125,115,98,85,75],
-  XRP: [62,65,60,70,75,95,88,80,75,68,62,58],
-  LINK:[72,78,70,80,85,90,82,98,88,78,70,62],
-  AVAX:[80,85,78,88,92,95,88,105,95,85,75,68],
-};
+/* ── CHART / TIME-SERIES DATA (real history, loaded from /api/history) ──
+   These start empty and are filled by applyHistory() once CoinGecko data
+   arrives. No more hardcoded/synthetic series. */
+let MONTHS=[];
+let CMC_DAYS_30=[];
+let CMC_MC_30D=[], CMC_MC_1Y=[];
+let DOM={}, EX_TOT=[], EX_NORM={}, EX_OTHERS=[], ALL_OTHERS=[];
+let VOL={};
+let COIN_MCAP_30={}, COIN_MCAP_1Y={};   // per-coin market cap ($B) for the overlay
+let HIST_VOL24H=null, HIST_UPDATED=null;
 const COIN_COLORS={BTC:'#f7931a',ETH:'#627eea',XRP:'#3461fb',SOL:'#9945ff',LINK:'#2a5ada',AVAX:'#e84142'};
 const ALL_COINS=['BTC','ETH','XRP','SOL','LINK','AVAX'];
 
@@ -1935,7 +1910,7 @@ function updateOverviewRule(asset){
   if(!asset){
     title.textContent=overviewFilterOn?'The 54 kept assets':'From 683 to 54';
     body.innerHTML=overviewFilterOn
-      ? 'These 54 assets pass every screening rule and are the universe scored by the factor model. Hover any bubble for its sector, market cap, and role.'
+      ? 'These 54 assets pass every screening rule and are the ones our research process studies most closely. Hover any bubble for its sector, market cap, and role.'
       : 'Hover any bubble for its sector, market cap, and role. Toggle <strong>Show 54 kept</strong> to narrow the map to the investable subset.';
     return;
   }
@@ -2033,19 +2008,6 @@ function buildMktCapSelect(){
   });
   sel.value=mktCapCoin;
 }
-function syntheticSeries(ticker, labels){
-  const a=DATA.find(x=>x.t===ticker);
-  if(!a)return labels.map(()=>0);
-  const seed=ticker.split('').reduce((s,ch)=>s+ch.charCodeAt(0),0);
-  const base=a.m/1e9;
-  const amp=.08+(seed%7)/100;
-  const drift=(seed%2?1:-1)*.018;
-  return labels.map((_,i)=>{
-    const wave=Math.sin((i+seed%5)*.82)*amp+Math.cos((i+seed%3)*.41)*amp*.45;
-    const trend=(i/(Math.max(1,labels.length-1))-.5)*drift;
-    return +(base*(1+wave+trend)).toFixed(2);
-  });
-}
 
 /* ── Donut: sector market share over the 13-sector universe ── */
 function buildDonut(mode){
@@ -2090,14 +2052,15 @@ function buildMktCapChart(period){
   mktCapPeriod=period;
   const labels=period==='30d'?CMC_DAYS_30:MONTHS;
   const mc=period==='30d'?CMC_MC_30D:CMC_MC_1Y;
-  const vols=period==='30d'?CMC_VOL_30D:CMC_VOL_1Y;
-  const startV=mc[0],lastV=mc[mc.length-1],lastVol=vols[vols.length-1];
+  if(!mc||!mc.length){document.getElementById('mktcap-big').textContent='Loading…';document.getElementById('mktcap-vol').textContent='—';return;}
+  const lastV=mc[mc.length-1];
   document.getElementById('mktcap-big').textContent='$'+lastV.toFixed(2)+'T';
-  document.getElementById('mktcap-vol').textContent='$'+lastVol+'.0B';
+  document.getElementById('mktcap-vol').textContent=HIST_VOL24H?fmt(HIST_VOL24H):'—';
   const datasets=[{label:'Total Market Cap',data:mc,fill:true,tension:.3,borderWidth:1.8,pointRadius:0,pointHoverRadius:5,yAxisID:'y',
     borderColor:'#16c784',backgroundColor:'rgba(22,199,132,.08)'}];
   if(mktCapCoin!=='TOTAL'){
-    datasets.push({label:mktCapCoin+' Market Cap',data:syntheticSeries(mktCapCoin,labels),fill:false,tension:.35,borderWidth:2,pointRadius:0,pointHoverRadius:5,yAxisID:'y1',
+    const ov=(period==='30d'?COIN_MCAP_30:COIN_MCAP_1Y)[mktCapCoin];
+    if(ov&&ov.length)datasets.push({label:mktCapCoin+' Market Cap',data:ov,fill:false,tension:.35,borderWidth:2,pointRadius:0,pointHoverRadius:5,yAxisID:'y1',
       borderColor:coinColor(mktCapCoin),backgroundColor:coinColor(mktCapCoin)});
   }
   if(mktCapChart){mktCapChart.destroy();mktCapChart=null;}
@@ -2140,10 +2103,12 @@ function buildCompTog(){
   });
 }
 function buildCompChart(){
+  if(!MONTHS.length)return;
   const isEx=compMode==='ex';
+  const range=MONTHS.length?` (${MONTHS[0]} – ${MONTHS[MONTHS.length-1]})`:'';
   document.getElementById('comp-note').textContent=isEx
-    ?'Ex-BTC/ETH · % of ex-BTC/ETH market (Jun \'24 – May \'25)'
-    :'All assets · % of total crypto market cap';
+    ?'Ex-BTC/ETH · % of ex-BTC/ETH market'+range
+    :'All assets · % of total crypto market cap'+range;
 
   let datasets;
   if(isEx){
@@ -2207,7 +2172,8 @@ function buildVolTog(){
   });
 }
 function buildVolChart(){
-  const datasets=ALL_COINS.filter(c=>activeVolCoins.has(c)).map(c=>({
+  if(!MONTHS.length)return;
+  const datasets=ALL_COINS.filter(c=>activeVolCoins.has(c)&&VOL[c]).map(c=>({
     label:c,data:VOL[c],fill:false,
     borderColor:COIN_COLORS[c],borderWidth:2,tension:.4,pointRadius:0,pointHoverRadius:4,
   }));
@@ -2488,6 +2454,52 @@ else{document.addEventListener('DOMContentLoaded',initAnchorageOverview);}
 /* Kick off live data immediately, then poll every 60s (server caches CMC at 300s). */
 refreshLiveData();
 setInterval(refreshLiveData,60000);
+
+/* ===== Historical charts: real data from /api/history (CoinGecko, cached ~6h) ===== */
+function histStamp(){
+  if(!HIST_UPDATED)return'Source: CoinGecko';
+  const t=new Date(HIST_UPDATED);
+  return'Source: CoinGecko · as of '+t.toLocaleDateString('en-US',{month:'short',day:'numeric'})+' '+t.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
+}
+function setHistStamp(ok){
+  const note=ok?histStamp():'Historical data temporarily unavailable';
+  const m=document.getElementById('mktcap-sub');if(m)m.textContent='Top assets, scaled to total market cap · '+note;
+  const v=document.getElementById('vol-sub');if(v)v.textContent='Trailing 30-day annualized volatility · '+note;
+  if(!ok){const c=document.getElementById('comp-note');if(c)c.textContent=note;}
+}
+function applyHistory(h){
+  MONTHS=h.months;CMC_DAYS_30=h.days30;
+  CMC_MC_30D=h.total30;CMC_MC_1Y=h.total1y;
+  DOM=h.dom||{};VOL=h.vol||{};
+  COIN_MCAP_30=h.mcap30||{};COIN_MCAP_1Y=h.mcap1y||{};
+  HIST_VOL24H=h.vol24h_now;HIST_UPDATED=h.updated;
+  // derive ex-BTC/ETH normalized shares (same formulas as before, now from real DOM)
+  const g=(o,k,i)=>((o[k]&&o[k][i])||0);
+  EX_TOT=MONTHS.map((_,i)=>+(100-g(DOM,'BTC',i)-g(DOM,'ETH',i)).toFixed(2));
+  EX_NORM={};['XRP','SOL','LINK','AVAX'].forEach(c=>{EX_NORM[c]=MONTHS.map((_,i)=>EX_TOT[i]?+(g(DOM,c,i)/EX_TOT[i]*100).toFixed(1):0);});
+  EX_OTHERS=MONTHS.map((_,i)=>Math.max(0,+(100-(EX_NORM.XRP[i]||0)-(EX_NORM.SOL[i]||0)-(EX_NORM.LINK[i]||0)-(EX_NORM.AVAX[i]||0)).toFixed(1)));
+  ALL_OTHERS=MONTHS.map((_,i)=>Math.max(0,+(100-g(DOM,'BTC',i)-g(DOM,'ETH',i)-g(DOM,'XRP',i)-g(DOM,'SOL',i)).toFixed(1)));
+  setHistStamp(true);
+  if(overviewInited){buildMktCapChart(mktCapPeriod);buildCompChart();buildVolChart();}
+}
+async function loadHistory(){
+  try{
+    const r=await fetch('/api/history',{cache:'no-store'});
+    if(!r.ok)throw new Error('http '+r.status);
+    const h=await r.json();
+    if(!h.months||!h.months.length)throw new Error('empty');
+    applyHistory(h);
+  }catch(e){ setHistStamp(false); }
+}
+loadHistory();
+setInterval(loadHistory,30*60*1000); // pick up cache refreshes in long-open sessions
 </script>
+<footer style="margin:10px 24px 30px;padding-top:14px;border-top:1px solid #e8ecf2;color:#8a96aa;font-size:11px;line-height:1.65;font-family:'Inter',system-ui,sans-serif">
+  <strong style="color:#5b6678">For educational purposes only — not investment advice.</strong>
+  This dashboard is provided by rebel Financial for general client education about the digital asset market. Market data is for information only and may be delayed or inaccurate.
+  Live quotes: CoinMarketCap · Historical charts: CoinGecko · Price charts: TradingView.
+  Cryptocurrencies are volatile and speculative; past performance does not indicate future results, and nothing here is a recommendation to buy, sell, or hold any asset. Consult your advisor before making investment decisions.
+  © rebel Financial.
+</footer>
 </body>
 </html>
