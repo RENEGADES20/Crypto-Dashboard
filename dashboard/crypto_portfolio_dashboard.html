@@ -421,7 +421,7 @@ table.at tbody tr:last-child td{border-bottom:none}
   <!-- Volatility with coin toggles -->
   <div class="card chart-card">
     <div class="card-hdr">
-      <div><span class="card-title">30-Day Annualized Volatility</span><div class="chart-sub" id="vol-sub">Hover for selected-coin legend</div></div>
+      <div><span class="card-title">Annualized Volatility</span><div class="chart-sub" id="vol-sub">Hover for selected-coin legend</div></div>
       <div class="coin-picker" id="vol-tog"></div>
     </div>
     <div class="ch220"><canvas id="vol-canvas"></canvas></div>
@@ -1448,7 +1448,7 @@ let CMC_MC_30D=[], CMC_MC_1Y=[];
 let DOM={}, EX_TOT=[], EX_NORM={}, EX_OTHERS=[], ALL_OTHERS=[];
 let VOL={};
 let COIN_MCAP_30={}, COIN_MCAP_1Y={};   // per-coin market cap ($B) for the overlay
-let HIST_VOL24H=null, HIST_UPDATED=null;
+let HIST_VOL24H=null, HIST_UPDATED=null, HIST_SOURCE='DeFiLlama';
 const COIN_COLORS={BTC:'#f7931a',ETH:'#627eea',XRP:'#3461fb',SOL:'#9945ff',LINK:'#2a5ada',AVAX:'#e84142'};
 const ALL_COINS=['BTC','ETH','XRP','SOL','LINK','AVAX'];
 
@@ -2459,14 +2459,15 @@ setInterval(refreshLiveData,60000);
 
 /* ===== Historical charts: real data from /api/history (CoinGecko, cached ~6h) ===== */
 function histStamp(){
-  if(!HIST_UPDATED)return'Source: CoinGecko';
+  const src=HIST_SOURCE||'DeFiLlama';
+  if(!HIST_UPDATED)return'Source: '+src;
   const t=new Date(HIST_UPDATED);
-  return'Source: CoinGecko · as of '+t.toLocaleDateString('en-US',{month:'short',day:'numeric'})+' '+t.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
+  return'Source: '+src+' · as of '+t.toLocaleDateString('en-US',{month:'short',day:'numeric'})+' '+t.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
 }
 function setHistStamp(ok){
   const note=ok?histStamp():'Historical data temporarily unavailable';
   const m=document.getElementById('mktcap-sub');if(m)m.textContent='Top assets, scaled to total market cap · '+note;
-  const v=document.getElementById('vol-sub');if(v)v.textContent='Trailing 30-day annualized volatility · '+note;
+  const v=document.getElementById('vol-sub');if(v)v.textContent='Annualized volatility from weekly returns · '+note;
   if(!ok){const c=document.getElementById('comp-note');if(c)c.textContent=note;}
 }
 function applyHistory(h){
@@ -2474,7 +2475,7 @@ function applyHistory(h){
   CMC_MC_30D=h.total30;CMC_MC_1Y=h.total1y;
   DOM=h.dom||{};VOL=h.vol||{};
   COIN_MCAP_30=h.mcap30||{};COIN_MCAP_1Y=h.mcap1y||{};
-  HIST_VOL24H=h.vol24h_now;HIST_UPDATED=h.updated;
+  HIST_VOL24H=h.vol24h_now;HIST_UPDATED=h.updated;HIST_SOURCE=h.source||'DeFiLlama';
   // derive ex-BTC/ETH normalized shares (same formulas as before, now from real DOM)
   const g=(o,k,i)=>((o[k]&&o[k][i])||0);
   EX_TOT=MONTHS.map((_,i)=>+(100-g(DOM,'BTC',i)-g(DOM,'ETH',i)).toFixed(2));
@@ -2499,7 +2500,7 @@ setInterval(loadHistory,30*60*1000); // pick up cache refreshes in long-open ses
 <footer style="margin:10px 24px 30px;padding-top:14px;border-top:1px solid #e8ecf2;color:#8a96aa;font-size:11px;line-height:1.65;font-family:'Inter',system-ui,sans-serif">
   <strong style="color:#5b6678">For educational purposes only — not investment advice.</strong>
   This dashboard is provided by rebel Financial for general client education about the digital asset market. Market data is for information only and may be delayed or inaccurate.
-  Live quotes: CoinMarketCap · Historical charts: CoinGecko · Price charts: TradingView.
+  Live quotes: CoinMarketCap · Historical charts: CoinMarketCap &amp; DeFiLlama · Price charts: TradingView.
   Cryptocurrencies are volatile and speculative; past performance does not indicate future results, and nothing here is a recommendation to buy, sell, or hold any asset. Consult your advisor before making investment decisions.
   © rebel Financial.
 </footer>

@@ -1,121 +1,122 @@
-// Vercel serverless function: real historical market data from CoinGecko (free).
-// Replaces the previously hardcoded/synthetic history charts. Heavily edge-cached
-// (6h) because history barely moves and the free CoinGecko tier rate-limits bursts.
-//
-// Optional: set COINGECKO_API_KEY (free "Demo" key) in Vercel env vars for higher,
-// more reliable rate limits. Works keyless too (slower: calls are spaced out).
+// Vercel serverless function: real historical market data WITHOUT CoinGecko.
+// Sources (both from the project's own API list):
+//   - CoinMarketCap  : current market caps + total (same basis as the live top bar)
+//   - DeFiLlama      : historical prices (one call for all coins, no rate limits)
+// Market cap history is reconstructed as current_mcap * price_t / price_now
+// (circulating supply changes slowly), so totals/dominance match the live KPIs.
+// Edge-cached 6h.
 
-export const config = { maxDuration: 60 };
+export const config = { maxDuration: 30 };
 
-const CG = 'https://api.coingecko.com/api/v3';
-// The six majors the charts actually plot. Order = stacking order.
+const CMC = 'https://pro-api.coinmarketcap.com';
+const LLAMA = 'https://coins.llama.fi';
 const COINS = [
-  { sym: 'BTC',  id: 'bitcoin' },
-  { sym: 'ETH',  id: 'ethereum' },
-  { sym: 'XRP',  id: 'ripple' },
-  { sym: 'SOL',  id: 'solana' },
-  { sym: 'LINK', id: 'chainlink' },
-  { sym: 'AVAX', id: 'avalanche-2' },
+  { sym: 'BTC',  id: 'coingecko:bitcoin' },
+  { sym: 'ETH',  id: 'coingecko:ethereum' },
+  { sym: 'XRP',  id: 'coingecko:ripple' },
+  { sym: 'SOL',  id: 'coingecko:solana' },
+  { sym: 'LINK', id: 'coingecko:chainlink' },
+  { sym: 'AVAX', id: 'coingecko:avalanche-2' },
 ];
 
-const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-function headers() {
-  const h = { Accept: 'application/json' };
-  const k = process.env.COINGECKO_API_KEY;
-  if (k) h['x-cg-demo-api-key'] = k;
-  return h;
+async function jget(url, opts) {
+  const r = await fetch(url, opts);
+  if (!r.ok) throw new Error(r.status + ' ' + url.split('?')[0]);
+  return r.json();
 }
-async function cg(path, tries = 4) {
-  for (let i = 0; i < tries; i++) {
-    const r = await fetch(CG + path, { headers: headers() });
-    if (r.ok) return r.json();
-    if (r.status === 429 && i < tries - 1) { await sleep(4000 * (i + 1)); continue; }
-    throw new Error('CoinGecko ' + r.status + ' on ' + path);
-  }
+// DeFiLlama chart -> { SYM: {ts:[ms...], price:[...]} } for coins that resolved
+function parseChart(resp) {
+  const out = {};
+  COINS.forEach((c) => {
+    const o = resp.coins && resp.coins[c.id];
+    if (o && o.prices && o.prices.length) {
+      out[c.sym] = { ts: o.prices.map((p) => p.timestamp * 1000), price: o.prices.map((p) => p.price) };
+    }
+  });
+  return out;
 }
+const annVol = (logrets, k) => {
+  if (logrets.length < 2) return 0;
+  const m = logrets.reduce((a, b) => a + b, 0) / logrets.length;
+  const v = logrets.reduce((a, b) => a + (b - m) * (b - m), 0) / (logrets.length - 1);
+  return Math.sqrt(v) * Math.sqrt(k) * 100;
+};
 
 export default async function handler(req, res) {
   try {
-    const hasKey = !!process.env.COINGECKO_API_KEY;
-    const gap = hasKey ? 300 : 2000; // space out keyless calls to dodge 429s
+    const key = process.env.CMC_API_KEY;
+    if (!key) { res.status(500).json({ error: 'CMC_API_KEY not set' }); return; }
 
-    const g = await cg('/global');
-    const total_now = g.data.total_market_cap.usd;
-    const vol24h_now = g.data.total_volume.usd;
+    // 1) CMC: current market caps for the majors + total (top-100 sum = same basis as top bar)
+    const lst = await jget(`${CMC}/v1/cryptocurrency/listings/latest?start=1&limit=100&convert=USD`,
+      { headers: { 'X-CMC_PRO_API_KEY': key, Accept: 'application/json' } });
+    const bySym = {};
+    lst.data.forEach((c) => { bySym[c.symbol] = c.quote.USD; });
+    const cmcTotal = lst.data.reduce((s, c) => s + (c.quote.USD.market_cap || 0), 0);
+    const vol24h_now = lst.data.reduce((s, c) => s + (c.quote.USD.volume_24h || 0), 0);
+    const curMcap = {};
+    COINS.forEach((c) => { curMcap[c.sym] = bySym[c.sym] ? bySym[c.sym].market_cap : null; });
 
-    // Fetch each coin's 1y daily history, spaced out.
-    const data = {};
-    for (let i = 0; i < COINS.length; i++) {
-      const c = COINS[i];
-      try {
-        const m = await cg(`/coins/${c.id}/market_chart?vs_currency=usd&days=365`);
-        data[c.sym] = {
-          ts: m.market_caps.map((p) => p[0]),
-          mcap: m.market_caps.map((p) => p[1]),
-          price: m.prices.map((p) => p[1]),
-        };
-      } catch (e) { /* skip this coin; chart will show one fewer line */ }
-      if (i < COINS.length - 1) await sleep(gap);
-    }
+    // 2) DeFiLlama: 1y weekly + 30d daily prices (one call each, all coins)
+    const ids = COINS.map((c) => c.id).join(',');
+    const wk = parseChart(await jget(`${LLAMA}/chart/${ids}?span=52&period=1w&searchWidth=600`, { headers: { Accept: 'application/json' } }));
+    const dl = parseChart(await jget(`${LLAMA}/chart/${ids}?span=30&period=1d&searchWidth=600`, { headers: { Accept: 'application/json' } }));
 
-    const syms = COINS.map((c) => c.sym).filter((s) => data[s]);
-    if (!syms.length) throw new Error('no coin history fetched');
+    const syms = COINS.map((c) => c.sym).filter((s) => wk[s] && curMcap[s] != null);
+    if (!syms.length) throw new Error('no price history');
 
-    // Align all series to a common length (last L daily points).
-    const L = Math.min(...syms.map((s) => data[s].mcap.length));
-    syms.forEach((s) => {
-      const d = data[s];
-      ['ts', 'mcap', 'price'].forEach((k) => { d[k] = d[k].slice(d[k].length - L); });
-    });
-    const ts = (data.BTC || data[syms[0]]).ts;
-
-    // Basket sum per day, scaled so the latest point equals the real total market cap.
-    const dailyTotal = [];
-    for (let i = 0; i < L; i++) { let s = 0; syms.forEach((k) => { s += data[k].mcap[i] || 0; }); dailyTotal.push(s); }
-    const scale = dailyTotal[L - 1] ? total_now / dailyTotal[L - 1] : 1;
+    // reconstruct per-coin market cap from price ratio
+    const mcapOf = (S, s, i) => curMcap[s] * (S[s].price[i] / S[s].price[S[s].price.length - 1]);
 
     const fmtDay = (t) => new Date(t).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
-    const fmtMon = (t) => { const d = new Date(t); const mo = d.toLocaleDateString('en-US', { month: 'short', timeZone: 'UTC' }); return mo + " ’" + String(d.getUTCFullYear()).slice(2); };
+    const fmtMon = (t) => { const d = new Date(t); return d.toLocaleDateString('en-US', { month: 'short', timeZone: 'UTC' }) + " ’" + String(d.getUTCFullYear()).slice(2); };
 
-    // 30-day daily slice.
-    const n30 = Math.min(30, L), s30 = L - n30;
-    const days30 = [], total30 = [], mcap30 = {};
-    syms.forEach((s) => (mcap30[s] = []));
-    for (let i = s30; i < L; i++) {
-      days30.push(fmtDay(ts[i]));
-      total30.push(+(dailyTotal[i] * scale / 1e12).toFixed(3));
-      syms.forEach((s) => mcap30[s].push(+((data[s].mcap[i] || 0) / 1e9).toFixed(2)));
-    }
-
-    // 12 monthly samples across the year.
+    // ---- 1-year monthly (sample 12 points from the weekly series) ----
+    const Lw = Math.min(...syms.map((s) => wk[s].price.length));
+    const wts = wk[syms[0]].ts;
+    const wTotal = [];
+    for (let i = 0; i < Lw; i++) { let t = 0; syms.forEach((s) => (t += mcapOf(wk, s, i))); wTotal.push(t); }
+    const wScale = wTotal[Lw - 1] ? cmcTotal / wTotal[Lw - 1] : 1;
     const NM = 12, months = [], total1y = [], dom = {}, vol = {}, mcap1y = {};
     syms.forEach((s) => { dom[s] = []; vol[s] = []; mcap1y[s] = []; });
     for (let k = 0; k < NM; k++) {
-      const j = Math.round(k * (L - 1) / (NM - 1));
-      months.push(fmtMon(ts[j]));
-      total1y.push(+(dailyTotal[j] * scale / 1e12).toFixed(3));
-      const trueTotal = (dailyTotal[j] * scale) || 1;
+      const j = Math.round(k * (Lw - 1) / (NM - 1));
+      months.push(fmtMon(wts[j]));
+      total1y.push(+(wTotal[j] * wScale / 1e12).toFixed(3));
+      const dispTotal = (wTotal[j] * wScale) || 1;
+      const hi = Math.max(j, 6), lo = Math.max(0, hi - 6); // ≥6 weekly returns
       syms.forEach((s) => {
-        dom[s].push(+((data[s].mcap[j] || 0) / trueTotal * 100).toFixed(2));
-        mcap1y[s].push(+((data[s].mcap[j] || 0) / 1e9).toFixed(2));
-        // annualized vol from daily log returns over the trailing ~30 days
-        const a = Math.max(1, j - 30), rets = [];
-        for (let i = a; i <= j; i++) { const p0 = data[s].price[i - 1], p1 = data[s].price[i]; if (p0 > 0 && p1 > 0) rets.push(Math.log(p1 / p0)); }
-        let v = 0;
-        if (rets.length > 1) {
-          const mean = rets.reduce((x, y) => x + y, 0) / rets.length;
-          const varr = rets.reduce((x, y) => x + (y - mean) * (y - mean), 0) / (rets.length - 1);
-          v = Math.sqrt(varr) * Math.sqrt(365) * 100;
-        }
-        vol[s].push(+v.toFixed(0));
+        const mc = mcapOf(wk, s, j);
+        dom[s].push(+(mc / dispTotal * 100).toFixed(2));
+        mcap1y[s].push(+(mc / 1e9).toFixed(2));
+        const rets = [];
+        for (let i = lo + 1; i <= hi; i++) { const p0 = wk[s].price[i - 1], p1 = wk[s].price[i]; if (p0 > 0 && p1 > 0) rets.push(Math.log(p1 / p0)); }
+        vol[s].push(+annVol(rets, 52).toFixed(0));
       });
+    }
+
+    // ---- 30-day daily ----
+    const dsyms = syms.filter((s) => dl[s]);
+    const Ld = dsyms.length ? Math.min(...dsyms.map((s) => dl[s].price.length)) : 0;
+    const days30 = [], total30 = [], mcap30 = {};
+    dsyms.forEach((s) => (mcap30[s] = []));
+    if (Ld) {
+      const dts = dl[dsyms[0]].ts;
+      const dTotal = [];
+      for (let i = 0; i < Ld; i++) { let t = 0; dsyms.forEach((s) => (t += mcapOf(dl, s, i))); dTotal.push(t); }
+      const dScale = dTotal[Ld - 1] ? cmcTotal / dTotal[Ld - 1] : 1;
+      for (let i = 0; i < Ld; i++) {
+        days30.push(fmtDay(dts[i]));
+        total30.push(+(dTotal[i] * dScale / 1e12).toFixed(3));
+        dsyms.forEach((s) => mcap30[s].push(+(mcapOf(dl, s, i) / 1e9).toFixed(2)));
+      }
     }
 
     res.setHeader('Cache-Control', 's-maxage=21600, stale-while-revalidate=86400');
     res.setHeader('Content-Type', 'application/json');
     res.status(200).json({
-      updated: new Date().toISOString(), source: 'CoinGecko',
-      coins: syms, total_now, vol24h_now,
+      updated: new Date().toISOString(), source: 'CoinMarketCap + DeFiLlama',
+      coins: syms, total_now: cmcTotal, vol24h_now,
       days30, total30, mcap30, months, total1y, dom, vol, mcap1y,
     });
   } catch (e) {
