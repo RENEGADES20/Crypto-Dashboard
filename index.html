@@ -2497,12 +2497,15 @@ async function loadHistory(){
 loadHistory();
 setInterval(loadHistory,30*60*1000); // pick up cache refreshes in long-open sessions
 </script>
-<footer style="margin:10px 24px 30px;padding-top:14px;border-top:1px solid #e8ecf2;color:#8a96aa;font-size:11px;line-height:1.65;font-family:'Inter',system-ui,sans-serif">
-  <strong style="color:#5b6678">For educational purposes only — not investment advice.</strong>
-  This dashboard is provided by rebel Financial for general client education about the digital asset market. Market data is for information only and may be delayed or inaccurate.
-  Live quotes: CoinMarketCap · Historical charts: CoinMarketCap &amp; DeFiLlama · Price charts: TradingView.
-  Cryptocurrencies are volatile and speculative; past performance does not indicate future results, and nothing here is a recommendation to buy, sell, or hold any asset. Consult your advisor before making investment decisions.
-  © rebel Financial.
+<footer style="max-width:1320px;margin:20px auto 34px;padding:18px 24px 0;border-top:1px solid #e8ecf2;font-family:'Inter',system-ui,sans-serif">
+  <div style="font-size:12px;font-weight:700;color:#5b6678;letter-spacing:.2px;margin-bottom:7px">For educational purposes only — not investment advice.</div>
+  <p style="font-size:11px;line-height:1.7;color:#8a96aa;margin:0 0 12px;max-width:980px">
+    This dashboard is provided by rebel Financial for general client education about the digital asset market. Market data is for information only and may be delayed or inaccurate. Cryptocurrencies are volatile and speculative; past performance does not indicate future results, and nothing here is a recommendation to buy, sell, or hold any asset. Consult your advisor before making investment decisions.
+  </p>
+  <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;font-size:10.5px;color:#9aa6b8;border-top:1px solid #f0f3f8;padding:10px 0 0">
+    <span>Live quotes: <b style="color:#7b8798;font-weight:600">CoinMarketCap</b> &nbsp;·&nbsp; Historical: <b style="color:#7b8798;font-weight:600">CoinMarketCap &amp; DeFiLlama</b> &nbsp;·&nbsp; Price charts: <b style="color:#7b8798;font-weight:600">TradingView</b></span>
+    <span style="white-space:nowrap">© rebel Financial</span>
+  </div>
 </footer>
 </body>
 </html>
