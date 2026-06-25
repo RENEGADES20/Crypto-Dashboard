@@ -1574,10 +1574,11 @@ function renderAnchorageOverview(){
 
   const assets=getOverviewAssets().slice().sort((a,b)=>(b.marketCap||0)-(a.marketCap||0));
   const n=assets.length||1;
-  const maxC=Math.max(1,...assets.map(a=>a.marketCap||0));
-  const lnMax=Math.log10(maxC+1)||1;
+  // icon size is linear in log10(market cap): smallest-cap -> floor, largest -> floor+span
+  const caps=assets.map(a=>a.marketCap).filter(Boolean);
+  const lmax=Math.log10(Math.max(10,...caps)), lmin=Math.log10(Math.min(...caps,lmax>0?Math.pow(10,lmax):1));
   const cfg=overviewFilterOn?{floor:34,span:66,pad:4}:{floor:15,span:46,pad:3};
-  const sizeFor=c=>c?cfg.floor+Math.pow(Math.log10(c+1)/lnMax,1.35)*cfg.span:cfg.floor;
+  const sizeFor=c=>c?cfg.floor+(Math.log10(c)-lmin)/((lmax-lmin)||1)*cfg.span:cfg.floor;
   const GA=Math.PI*(3-Math.sqrt(5));
   // single cluster: golden-angle spiral seed (biggest near centre), settled by physics
   const nodes=assets.map((a,i)=>{
