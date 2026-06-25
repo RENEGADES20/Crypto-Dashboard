@@ -289,31 +289,95 @@ table.at tbody tr:last-child td{border-bottom:none}
 @media(max-width:760px){.chart-row{grid-template-columns:1fr}}
 @media(max-width:640px){.asset-strip,.kpi-row,.sector-grid,.market-side{grid-template-columns:1fr}.chart-head,.chart-tools,.kline-hdr{align-items:stretch}.chart-tools{justify-content:flex-start}.kline-select{min-width:100%;width:100%}.kline-ivs{margin-left:0}.mktcap-top{display:block}.mktcap-sub{display:block;margin-top:4px}.market-table{min-width:640px}.table-scroll{overflow-x:auto}.asset-price-col{text-align:left}.asset-hdr{padding:16px}.ch280{height:240px}.ch260{height:230px}.ch220{height:230px}}
 </style>
+<style id="gx-theme">
+  :root{
+    --gx-accent:#7a449a;--gx-accent-deep:#6b3d8a;--gx-accent-soft:rgba(122,68,154,.10);
+    --gx-ink:#3b3d47;--gx-ink2:#565963;--gx-muted:#8b909b;
+    --gx-glass:rgba(255,255,255,.62);--gx-glass-strong:rgba(255,255,255,.82);
+    --gx-brd:rgba(255,255,255,.8);--gx-hair:rgba(40,44,60,.08);
+    --gx-shadow:0 8px 26px -18px rgba(40,44,60,.2);
+    --gx-blur:blur(20px) saturate(1.2);
+  }
+  body{background:#f1f2f5!important;color:var(--gx-ink)}
+  .gx-bg{position:fixed;inset:0;z-index:-1;overflow:hidden;pointer-events:none;
+    background:linear-gradient(135deg,#f7f8fa 0%,#f1f2f5 55%,#f3f4f7 100%)}
+  .gx-bg i{position:absolute;border-radius:50%;filter:blur(80px);display:block}
+  .gx-bg .bb1{width:460px;height:460px;background:#dde0e6;top:-140px;left:-80px;opacity:.5}
+  .gx-bg .bb2{width:400px;height:400px;background:#e1e3e9;bottom:-160px;right:-60px;opacity:.45}
+  .gx-bg .bb3{width:300px;height:300px;background:#e3dbe8;top:46%;right:34%;opacity:.16}
+
+  .gx-head{max-width:1280px;margin:0 auto;padding:20px 22px 0;display:flex;align-items:center;gap:16px}
+  .gx-brand{flex:1;display:flex;align-items:center;gap:11px;min-width:0}
+  .gx-brand img{width:40px;height:40px;object-fit:contain;display:block;flex:none}
+  .gx-brand b{font-size:14px;font-weight:650;color:var(--gx-ink);white-space:nowrap;line-height:1.15}
+  .gx-brand span{display:block;font-size:10.5px;color:var(--gx-muted);font-weight:500}
+  .gx-pill{flex:0 0 auto;display:flex;gap:2px;padding:5px;border-radius:999px;
+    background:var(--gx-glass);backdrop-filter:var(--gx-blur);-webkit-backdrop-filter:var(--gx-blur);
+    border:1px solid var(--gx-brd);box-shadow:var(--gx-shadow)}
+  .gx-pill .tab-btn{display:flex;align-items:center;gap:7px;padding:9px 15px;border-radius:999px;cursor:pointer;
+    font-size:13px;font-weight:550;color:#787d88;white-space:nowrap;transition:.18s;border:none;background:none}
+  .gx-pill .tab-btn:hover{color:var(--gx-ink)}
+  .gx-pill .tab-btn.active{background:var(--gx-glass-strong);color:var(--gx-accent);box-shadow:0 3px 11px -6px rgba(40,44,60,.3)}
+  .gx-pill .soon{font-size:8.5px;font-weight:700;letter-spacing:.3px;color:var(--gx-muted);background:rgba(40,44,60,.05);padding:2px 6px;border-radius:20px}
+  .gx-status{flex:1;display:flex;justify-content:flex-end;align-items:center;gap:8px;font-size:11.5px;font-weight:600;color:var(--gx-muted);white-space:nowrap}
+  .gx-kpibar{max-width:1280px;margin:16px auto 0;padding:15px 24px;display:flex;align-items:center;gap:24px;flex-wrap:wrap;
+    background:var(--gx-glass);backdrop-filter:var(--gx-blur);-webkit-backdrop-filter:var(--gx-blur);
+    border:1px solid var(--gx-brd);box-shadow:var(--gx-shadow);border-radius:18px}
+  .gx-kpibar .ts{display:flex;flex-direction:column;gap:1px}
+  .gx-kpibar .ts-l{font-size:10px;letter-spacing:.5px;text-transform:uppercase;color:var(--gx-muted);font-weight:650}
+  .gx-kpibar .ts-v{font-size:16px;font-weight:700;color:var(--gx-ink)!important}
+  .gx-sep{width:1px;height:28px;background:var(--gx-hair)}
+
+  .pane{max-width:1280px;margin:0 auto}
+  .card,.overview-shell,.overview-bubble-card,.overview-rules-panel,.overview-rule-card,
+  .kpi,.sc-card,.sd-hdr,.asset-hdr,.about-card,.stats-card,.asc{
+    background:var(--gx-glass)!important;backdrop-filter:var(--gx-blur);-webkit-backdrop-filter:var(--gx-blur);
+    border:1px solid var(--gx-brd)!important;box-shadow:var(--gx-shadow)!important;border-radius:18px!important}
+  .kpi{border-top:1px solid var(--gx-brd)!important}
+  .market-table th{background:transparent!important;color:var(--gx-muted)!important;border-bottom:1px solid var(--gx-hair)!important}
+  .market-table tbody tr:hover td{background:rgba(122,68,154,.05)!important}
+  .kline-hdr{border-bottom:1px solid var(--gx-hair)!important}
+  .card-title,.sc-mc,.kpi-val,.mktcap-big,.asset-ticker,.sd-title{color:var(--gx-ink)!important}
+  a{color:var(--gx-accent)}
+  .tog-btn.on{color:var(--gx-accent)!important}
+  .back-btn{color:var(--gx-accent)!important;border-color:var(--gx-accent-soft)!important;background:var(--gx-accent-soft)!important}
+
+  .gx-empty{padding:64px 28px;text-align:center}
+  .gx-empty .ic{width:64px;height:64px;border-radius:20px;background:var(--gx-glass-strong);border:1px solid var(--gx-brd);display:flex;align-items:center;justify-content:center;margin:0 auto 18px}
+  .gx-empty .ic svg{width:28px;height:28px;stroke:var(--gx-accent);fill:none;stroke-width:1.6}
+  .gx-empty h2{font-size:19px;font-weight:650;color:var(--gx-ink);margin:0}
+  .gx-empty p{font-size:13px;color:var(--gx-muted);max-width:460px;margin:10px auto 0;line-height:1.7}
+  .gx-empty .rsv{display:inline-block;margin-top:18px;font-size:11px;font-weight:700;letter-spacing:.5px;color:var(--gx-ink2);background:rgba(40,44,60,.05);padding:6px 14px;border-radius:20px}
+  @media(max-width:980px){.gx-head{flex-wrap:wrap}.gx-pill{order:3;width:100%;justify-content:center;overflow:auto}}
+</style>
 </head>
 <body>
+<div class="gx-bg"><i class="bb1"></i><i class="bb2"></i><i class="bb3"></i></div>
 
-<header class="topbar">
-  <div class="brand">
-    <img class="brand-logo" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='44' height='44' viewBox='0 0 44 44'%3E%3Crect width='44' height='44' rx='9' fill='%23723fa0'/%3E%3Ctext x='22' y='26.6' text-anchor='middle' font-family='Inter,Arial,sans-serif' font-size='13' font-weight='800' fill='white'%3ErF%3C/text%3E%3C/svg%3E" alt="rF">
-    <span class="brand-name">rebel Financial</span>
-    <div class="brand-sep"></div>
-    <span class="brand-sub">Digital Asset Research</span>
+<header class="gx-head">
+  <div class="gx-brand">
+    <img src="https://rebelfinancial.com/wp-content/uploads/2020/12/cropped-rF-Short-Logo-2018-png-with-white-stroke-outline-1-192x192.png" alt="rebel Financial">
+    <div><b>rebel Financial</b><span>Digital Asset Research</span></div>
   </div>
-  <div class="topbar-right">
-    <div class="ts"><div class="ts-l">Total Mkt Cap</div><div class="ts-v num-anim" id="hdr-tot" style="color:#3861fb">—</div></div>
-    <div class="ts"><div class="ts-l">BTC</div><div class="ts-v num-anim" id="hdr-btc-px" style="color:#f7931a">—</div></div>
-    <div class="ts"><div class="ts-l">ETH</div><div class="ts-v num-anim" id="hdr-eth-px" style="color:#627eea">—</div></div>
-    <div class="ts"><div class="ts-l">SOL</div><div class="ts-v num-anim" id="hdr-sol-px" style="color:#9945ff">—</div></div>
-    <div class="ts"><div class="ts-l">BTC Dom.</div><div class="ts-v num-anim" id="hdr-dom" style="color:#f7931a">—</div></div>
-    <div class="ts ts-live"><span class="live-dot" id="live-dot" title="Connecting to live feed…"></span><div><div class="ts-l">Status</div><div class="ts-v" id="live-lbl" style="color:#8a96aa">…</div></div></div>
-  </div>
+  <nav class="gx-pill">
+    <div class="tab-btn active" data-tab="overview" onclick="switchTab('overview',this)">Overview</div>
+    <div class="tab-btn" data-tab="dashboard" onclick="switchTab('dashboard',this)">Dashboard</div>
+    <div class="tab-btn" data-tab="sectors" onclick="switchTab('sectors',this)">Sectors</div>
+    <div class="tab-btn" data-tab="predict" onclick="switchTab('predict',this)">Prediction<span class="soon">SOON</span></div>
+    <div class="tab-btn" data-tab="news" onclick="switchTab('news',this)">News<span class="soon">SOON</span></div>
+  </nav>
+  <div class="gx-status"><span class="live-dot" id="live-dot" title="Connecting to live feed…"></span><span id="live-lbl">…</span></div>
 </header>
 
-<nav class="tabbar">
-  <div class="tab-btn active" data-tab="overview" onclick="switchTab('overview',this)">Overview</div>
-  <div class="tab-btn" data-tab="dashboard" onclick="switchTab('dashboard',this)">Dashboard</div>
-  <div class="tab-btn" data-tab="sectors" onclick="switchTab('sectors',this)">Sectors</div>
-</nav>
+<div class="gx-kpibar">
+  <div class="ts"><div class="ts-l">Total Mkt Cap</div><div class="ts-v num-anim" id="hdr-tot">—</div></div>
+  <div class="gx-sep"></div>
+  <div class="ts"><div class="ts-l">BTC</div><div class="ts-v num-anim" id="hdr-btc-px">—</div></div>
+  <div class="ts"><div class="ts-l">ETH</div><div class="ts-v num-anim" id="hdr-eth-px">—</div></div>
+  <div class="ts"><div class="ts-l">SOL</div><div class="ts-v num-anim" id="hdr-sol-px">—</div></div>
+  <div class="gx-sep"></div>
+  <div class="ts"><div class="ts-l">BTC Dom.</div><div class="ts-v num-anim" id="hdr-dom">—</div></div>
+</div>
 
 <!-- == OVERVIEW / FRAMEWORK MAP == -->
 <div class="pane active overview-map-pane" id="pane-overview">
@@ -481,6 +545,30 @@ table.at tbody tr:last-child td{border-bottom:none}
     <div class="card" style="padding:0;overflow:hidden;margin-bottom:12px">
       <div class="kline-hdr"><span class="card-title" style="color:#8a96aa">Market Price Chart</span></div>
       <div style="height:300px"><div id="tv-asset" style="width:100%;height:100%"></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ PREDICTION MARKETS (reserved) ══ -->
+<div class="pane" id="pane-predict">
+  <div class="card" style="padding:0">
+    <div class="gx-empty">
+      <div class="ic"><svg viewBox="0 0 24 24"><path d="M3 17l6-6 4 4 8-8"/><path d="M17 7h4v4"/></svg></div>
+      <h2>Prediction Markets</h2>
+      <p>Live odds from prediction-market venues — election, macro, and crypto-event probabilities — will appear here, to show what the crowd is pricing in alongside the market.</p>
+      <span class="rsv">RESERVED · COMING SOON</span>
+    </div>
+  </div>
+</div>
+
+<!-- ══ NEWS (reserved) ══ -->
+<div class="pane" id="pane-news">
+  <div class="card" style="padding:0">
+    <div class="gx-empty">
+      <div class="ic"><svg viewBox="0 0 24 24"><path d="M4 5h16v14H4zM8 9h8M8 13h8M8 17h5"/></svg></div>
+      <h2>News</h2>
+      <p>A curated digital-asset news feed — headlines, sources, and timestamps — will live here so clients can connect market moves to what's happening.</p>
+      <span class="rsv">RESERVED · COMING SOON</span>
     </div>
   </div>
 </div>
