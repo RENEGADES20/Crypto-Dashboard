@@ -1440,8 +1440,8 @@ const DATA=[
 DATA.forEach((d,i)=>d.r=i+1);
 
 /* ── CHART / TIME-SERIES DATA (real history, loaded from /api/history) ──
-   These start empty and are filled by applyHistory() once CoinGecko data
-   arrives. No more hardcoded/synthetic series. */
+   These start empty and are filled by applyHistory() once /api/history data
+   arrives (CoinMarketCap + DeFiLlama). No more hardcoded/synthetic series. */
 let MONTHS=[];
 let CMC_DAYS_30=[];
 let CMC_MC_30D=[], CMC_MC_1Y=[];
@@ -2457,7 +2457,7 @@ else{document.addEventListener('DOMContentLoaded',initAnchorageOverview);}
 refreshLiveData();
 setInterval(refreshLiveData,60000);
 
-/* ===== Historical charts: real data from /api/history (CoinGecko, cached ~6h) ===== */
+/* ===== Historical charts: real data from /api/history (CMC + DeFiLlama, cached ~6h) ===== */
 function histStamp(){
   const src=HIST_SOURCE||'DeFiLlama';
   if(!HIST_UPDATED)return'Source: '+src;
