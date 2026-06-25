@@ -46,9 +46,10 @@ html{zoom:1.25}
 .overview-bubble-card{background:linear-gradient(180deg,#f7f9fe 0%,#eef3f9 100%);border:1px solid #e9edf5;border-radius:16px;padding:16px;min-height:560px;position:relative;overflow:hidden}
 .overview-bubble-card::before{content:"";position:absolute;inset:auto 0 0 auto;width:240px;height:240px;border-radius:50%;background:radial-gradient(circle,rgba(56,97,251,.12),transparent 70%);pointer-events:none}
 .overview-bubbles{position:relative;height:520px;overflow:hidden}
-.overview-bubble{position:absolute;display:flex;align-items:center;justify-content:center;border-radius:50%;color:#fff;font-weight:800;font-size:11px;letter-spacing:.02em;border:1px solid rgba(255,255,255,.26);box-shadow:0 10px 24px rgba(15,23,42,.12);cursor:pointer;transition:transform .28s ease,opacity .28s ease,left .45s ease,top .45s ease;transform:translate(-50%,-50%)}
-.overview-bubble:hover{transform:translate(-50%,-50%) scale(1.05)}
-.overview-bubble small{font-size:9px;opacity:.85}
+.overview-bubble{position:absolute;display:flex;align-items:center;justify-content:center;border-radius:50%;background:#fff;border:1.5px solid #cbd5e1;box-shadow:0 6px 16px rgba(15,23,42,.14);cursor:pointer;overflow:hidden;padding:0;transition:transform .2s ease,opacity .28s ease,box-shadow .2s ease;transform:translate(-50%,-50%);z-index:1}
+.overview-bubble img{width:100%;height:100%;object-fit:contain;border-radius:50%;display:block;pointer-events:none}
+.overview-bubble.ov-nologo{border-width:0}
+.overview-bubble:hover{transform:translate(-50%,-50%) scale(1.18);z-index:30;box-shadow:0 12px 28px rgba(15,23,42,.28)}
 .overview-rules-panel{background:#fff;border:1px solid #e8ecf2;border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:12px;transition:transform .3s ease,opacity .3s ease}
 .overview-rules-panel.is-collapsed{transform:translateX(6px);opacity:.92}
 .overview-rules-panel h3{font-size:14px;font-weight:800;color:#0d1421}
@@ -1585,7 +1586,11 @@ function renderAnchorageOverview(){
       for(let j=i+1;j<n;j++){
         const B=nodes[j];
         let dx=B.x-A.x, dy=B.y-A.y, d=Math.sqrt(dx*dx+dy*dy)||0.01, min=A.r+B.r+cfg.pad;
-        if(d<min){const k=(min-d)/d*0.5; dx*=k; dy*=k; A.x-=dx; A.y-=dy; B.x+=dx; B.y+=dy;}
+        if(d<min){
+          // size-weighted push: bigger bubbles move less, so high-cap assets stay centred
+          const k=(min-d)/d, ox=dx*k, oy=dy*k, tot=A.r+B.r, wa=B.r/tot, wb=A.r/tot;
+          A.x-=ox*wa; A.y-=oy*wa; B.x+=ox*wb; B.y+=oy*wb;
+        }
       }
     }
     for(const nd of nodes){
@@ -1600,16 +1605,25 @@ function renderAnchorageOverview(){
     b.type='button'; b.className='overview-bubble';
     b.style.left=`${nd.x.toFixed(1)}px`; b.style.top=`${nd.y.toFixed(1)}px`;
     b.style.width=`${size.toFixed(1)}px`; b.style.height=`${size.toFixed(1)}px`;
-    b.style.background=`radial-gradient(circle at 32% 28%, ${color}, ${color}D0)`;
+    b.style.borderColor=color;
     b.style.opacity='0';
-    if(size>=20) b.innerHTML=`<span>${a.ticker.slice(0,4)}</span>`;
+    if(a.logo){
+      const img=document.createElement('img');
+      img.src=`https://s2.coinmarketcap.com/static/img/coins/64x64/${a.logo}.png`;
+      img.alt=a.ticker; img.loading='lazy';
+      img.addEventListener('error',()=>{b.classList.add('ov-nologo');b.style.background=`radial-gradient(circle at 32% 28%, ${color}, ${color}D0)`;img.remove();});
+      b.appendChild(img);
+    } else {
+      b.classList.add('ov-nologo');
+      b.style.background=`radial-gradient(circle at 32% 28%, ${color}, ${color}D0)`;
+    }
     b.title=`${a.name} · ${SECTOR_LABELS[a.sector]||a.sector}${a.marketCap?' · '+fmtCap(a.marketCap):''}`;
     const show=()=>updateOverviewRule(a);
     b.addEventListener('mouseenter',show);
     b.addEventListener('focus',show);
     b.addEventListener('click',show);
     container.appendChild(b);
-    requestAnimationFrame(()=>{b.style.opacity=overviewFilterOn?'1':(a.marketCap?'1':'0.82');});
+    requestAnimationFrame(()=>{b.style.opacity='1';});
   });
   renderOverviewLegend(assets);
   updateOverviewRule(null);
