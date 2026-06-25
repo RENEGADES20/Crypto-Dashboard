@@ -1,17 +1,25 @@
-# Keep this GitHub Pages repo limited to publishable web files.
+# Publish ONLY the web app. Ignore everything else by default (whitelist).
+# This protects local research material AND prevents secrets (e.g. the CMC key
+# hardcoded in data/*.py) from ever being committed.
 *
 
+# --- Web app (allowed) ---
 !index.html
-!README.md
+!overview_assets.js
 !.gitignore
 !.nojekyll
 
-# Never publish local research/workbook material or editor temp files.
-*.xlsx
-*.xls
-*.docx
-*.doc
-*.pdf
-~$*
-*.tmp
-marketcap/
+# Vercel serverless API
+!api/
+!api/*.js
+
+# Dashboard copies (HTML + JS only; no PDFs/DOCX inside)
+!dashboard/
+!dashboard/*.html
+!dashboard/*.js
+
+# --- Secrets: never publish, even if matched above ---
+.env
+.env.*
+**/api.txt
+**/tt_session.json

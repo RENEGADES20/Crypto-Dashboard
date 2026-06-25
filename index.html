@@ -250,6 +250,40 @@ table.at tbody tr:last-child td{border-bottom:none}
 .wpct{font-size:10px;color:#8a96aa;width:36px;text-align:right}
 .hidden{display:none!important}
 
+/* ── LIVE indicator ── */
+.ts-live{display:flex;align-items:center;gap:7px}
+.live-dot{width:8px;height:8px;border-radius:50%;background:#cbd5e1;flex:0 0 auto;transition:background .3s}
+.live-dot.on{background:#16c784;animation:livePulse 1.9s ease-out infinite}
+.live-dot.off{background:#ea3943}
+@keyframes livePulse{0%{box-shadow:0 0 0 0 rgba(22,199,132,.55)}70%{box-shadow:0 0 0 6px rgba(22,199,132,0)}100%{box-shadow:0 0 0 0 rgba(22,199,132,0)}}
+
+/* ── Coin logos (replace 3-letter monograms) ── */
+.coin-logo{width:26px;height:26px;border-radius:50%;object-fit:contain;background:#fff;border:1px solid #eef1f6;flex:0 0 auto;display:block}
+.coin-logo.lf{display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:800;border:none;text-transform:uppercase}
+.coin-logo.lg{width:44px;height:44px}
+.num-anim{font-variant-numeric:tabular-nums}
+
+/* ── Sectors grid (CoinMarketCap "Categories" style) ── */
+.sc-card{position:relative;opacity:0;transform:translateY(10px);animation:cardIn .5s cubic-bezier(.22,.61,.36,1) forwards;transition:box-shadow .18s ease,transform .18s ease}
+.sc-card:hover{transform:translateY(-3px);box-shadow:0 10px 26px rgba(15,23,42,.12)}
+@keyframes cardIn{to{opacity:1;transform:translateY(0)}}
+.sc-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:12px}
+.sc-logos{display:flex;align-items:center;padding-right:2px}
+.sc-logos .coin-logo{width:24px;height:24px;margin-left:-8px;box-shadow:0 1px 4px rgba(0,0,0,.14)}
+.sc-logos .coin-logo:first-child{margin-left:0}
+.sc-more{font-size:9px;font-weight:700;color:#8a96aa;margin-left:5px;align-self:center}
+.sc-mcl{font-size:9px;text-transform:uppercase;letter-spacing:.5px;color:#8a96aa;font-weight:700}
+.sc-mc{font-size:17px;font-weight:800;color:#0d1421;margin-top:2px}
+.sc-bar{height:6px;border-radius:999px;background:#eef1f7;overflow:hidden;margin:10px 0 9px}
+.sc-bar-fill{height:100%;border-radius:999px;width:0;transition:width .7s cubic-bezier(.22,.61,.36,1)}
+.sc-row2{display:flex;align-items:center;justify-content:space-between;font-size:11px;color:#64748b;margin-bottom:10px}
+.sc-row2 b{font-weight:800;color:#0d1421}
+.sc-view{font-weight:700}
+/* row fade-in for tables */
+@keyframes rowIn{from{opacity:0}to{opacity:1}}
+.fade-row{animation:rowIn .45s ease both}
+.px-na{color:#b0bac8}
+
 @media(max-width:1180px){.market-grid,.sector-layout{grid-template-columns:1fr}.market-side{display:grid;grid-template-columns:1fr 1fr}.asset-body{grid-template-columns:1fr}.topbar-right{display:none}}
 @media(max-width:900px){.asset-strip,.kpi-row,.sector-grid,.market-side{grid-template-columns:1fr 1fr}.pane{padding:12px 14px 32px}.tabbar{overflow:auto;padding:0 14px}.topbar{padding:0 14px}.brand-sub{display:none}}
 @media(max-width:760px){.chart-row{grid-template-columns:1fr}}
@@ -266,11 +300,12 @@ table.at tbody tr:last-child td{border-bottom:none}
     <span class="brand-sub">Digital Asset Research</span>
   </div>
   <div class="topbar-right">
-    <div class="ts"><div class="ts-l">Total Mkt Cap</div><div class="ts-v" id="hdr-tot" style="color:#3861fb">—</div></div>
-    <div class="ts"><div class="ts-l">BTC Dom.</div><div class="ts-v" id="hdr-btc" style="color:#f7931a">—</div></div>
-    <div class="ts"><div class="ts-l">ETH Share</div><div class="ts-v" id="hdr-eth" style="color:#627eea">—</div></div>
-    <div class="ts"><div class="ts-l">Ex-BTC/ETH</div><div class="ts-v" id="hdr-ex" style="color:#10b981">—</div></div>
-    <div class="ts"><div class="ts-l">As of</div><div class="ts-v" style="color:#8a96aa;font-size:11px">May 2025</div></div>
+    <div class="ts"><div class="ts-l">Total Mkt Cap</div><div class="ts-v num-anim" id="hdr-tot" style="color:#3861fb">—</div></div>
+    <div class="ts"><div class="ts-l">BTC</div><div class="ts-v num-anim" id="hdr-btc-px" style="color:#f7931a">—</div></div>
+    <div class="ts"><div class="ts-l">ETH</div><div class="ts-v num-anim" id="hdr-eth-px" style="color:#627eea">—</div></div>
+    <div class="ts"><div class="ts-l">SOL</div><div class="ts-v num-anim" id="hdr-sol-px" style="color:#9945ff">—</div></div>
+    <div class="ts"><div class="ts-l">BTC Dom.</div><div class="ts-v num-anim" id="hdr-dom" style="color:#f7931a">—</div></div>
+    <div class="ts ts-live"><span class="live-dot" id="live-dot" title="Connecting to live feed…"></span><div><div class="ts-l">Status</div><div class="ts-v" id="live-lbl" style="color:#8a96aa">…</div></div></div>
   </div>
 </header>
 
@@ -322,11 +357,11 @@ table.at tbody tr:last-child td{border-bottom:none}
 
   <!-- KPI row -->
   <div class="kpi-row">
-    <div class="kpi" style="--kc:#3861fb"><div class="kpi-label">Total Market Cap</div><div class="kpi-val" id="k-total">—</div><div class="kpi-note">50 assets covered</div></div>
-    <div class="kpi" style="--kc:#f7931a"><div class="kpi-label">BTC Dominance</div><div class="kpi-val" id="k-btc">—</div><div class="kpi-note">largest single position</div></div>
-    <div class="kpi" style="--kc:#627eea"><div class="kpi-label">ETH Share</div><div class="kpi-val" id="k-eth">—</div><div class="kpi-note">Ethereum ecosystem</div></div>
-    <div class="kpi" style="--kc:#10b981"><div class="kpi-label">Ex-BTC / ETH</div><div class="kpi-val" id="k-ex">—</div><div class="kpi-note">48 diversified assets</div></div>
-    <div class="kpi" style="--kc:#8b5cf6"><div class="kpi-label">Sectors</div><div class="kpi-val">9</div><div class="kpi-note">thematic coverage</div></div>
+    <div class="kpi" style="--kc:#3861fb"><div class="kpi-label">Total Market Cap</div><div class="kpi-val num-anim" id="k-total">—</div><div class="kpi-note" id="k-total-note">Anchorage universe</div></div>
+    <div class="kpi" style="--kc:#f7931a"><div class="kpi-label">BTC Dominance</div><div class="kpi-val num-anim" id="k-btc">—</div><div class="kpi-note">largest single position</div></div>
+    <div class="kpi" style="--kc:#627eea"><div class="kpi-label">ETH Share</div><div class="kpi-val num-anim" id="k-eth">—</div><div class="kpi-note">Ethereum ecosystem</div></div>
+    <div class="kpi" style="--kc:#10b981"><div class="kpi-label">Ex-BTC / ETH</div><div class="kpi-val num-anim" id="k-ex">—</div><div class="kpi-note">ex-majors market cap</div></div>
+    <div class="kpi" style="--kc:#8b5cf6"><div class="kpi-label">Sectors</div><div class="kpi-val" id="k-sectors">13</div><div class="kpi-note">thematic coverage</div></div>
   </div>
 
   <!-- Row: donut + CMC Market Cap -->
@@ -1457,12 +1492,21 @@ const TICKER_ASSETS=[
   {t:'XRP', pct:'+1.3%',pos:true},
   {t:'LINK',pct:'+0.6%',pos:true},
 ];
+// Live 24h % change keyed by ticker, populated by refreshLiveData().
+const LIVE_CHANGE={};
 
 /* ── UTILS ── */
-const total  =DATA.reduce((s,a)=>s+a.m,0);
-const exTotal=DATA.filter(a=>a.t!=='BTC'&&a.t!=='ETH').reduce((s,a)=>s+a.m,0);
-const secTot={},secTotEx={};
-DATA.forEach(a=>{secTot[a.s]=(secTot[a.s]||0)+a.m;if(a.t!=='BTC'&&a.t!=='ETH')secTotEx[a.s]=(secTotEx[a.s]||0)+a.m;});
+let total  =0;
+let exTotal=0;
+let secTot={},secTotEx={};
+// Recompute the cap aggregates from the (possibly live-updated) DATA array.
+function recomputeAggregates(){
+  total  =DATA.reduce((s,a)=>s+a.m,0);
+  exTotal=DATA.filter(a=>a.t!=='BTC'&&a.t!=='ETH').reduce((s,a)=>s+a.m,0);
+  secTot={};secTotEx={};
+  DATA.forEach(a=>{secTot[a.s]=(secTot[a.s]||0)+a.m;if(a.t!=='BTC'&&a.t!=='ETH')secTotEx[a.s]=(secTotEx[a.s]||0)+a.m;});
+}
+recomputeAggregates();
 function fmt(v){if(v>=1e12)return'$'+(v/1e12).toFixed(2)+'T';if(v>=1e9)return'$'+(v/1e9).toFixed(2)+'B';return'$'+(v/1e6).toFixed(0)+'M';}
 function pct(v,b){return(v/b*100).toFixed(1)+'%'}
 
@@ -1477,11 +1521,8 @@ function sparkSVG(pts,color,w=80,h=38){
   return`<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" style="display:block"><polyline points="${coords}" fill="none" stroke="${color}" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/></svg>`;
 }
 
-/* TOPBAR fill */
-['hdr-tot','k-total'].forEach(id=>document.getElementById(id).textContent=fmt(total));
-['hdr-btc','k-btc'].forEach(id=>document.getElementById(id).textContent=pct(DATA[0].m,total));
-['hdr-eth','k-eth'].forEach(id=>document.getElementById(id).textContent=pct(DATA[1].m,total));
-['hdr-ex','k-ex'].forEach(id=>document.getElementById(id).textContent=fmt(exTotal));
+/* TOPBAR + KPI fill is handled by paintHeader() in the UNIVERSE layer below
+   (driven by the 613-asset universe + live /api/quotes overlay), not DATA[]. */
 
 /* ── CHART.JS SETUP ── */
 Chart.defaults.font.family="'Inter',system-ui,sans-serif";
@@ -1554,6 +1595,130 @@ const SECTOR_PALETTE={L1:'#3861fb',L2:'#7c3aed',DeFi:'#16a34a',DePIN:'#0ea5e9',
 const SECTOR_ORDER=['L1','L2','DeFi','Infrastructure','AI','DePIN','Payments','RWA','Stablecoin','Gaming','Meme','NFT','Other'];
 function sectorColor(sector){return SECTOR_PALETTE[sector]||'#64748b';}
 function fmtCap(v){if(!v)return'—';if(v>=1e12)return'$'+(v/1e12).toFixed(2)+'T';if(v>=1e9)return'$'+(v/1e9).toFixed(2)+'B';if(v>=1e6)return'$'+(v/1e6).toFixed(0)+'M';return'$'+v.toLocaleString();}
+
+/* ════════════════════ UNIVERSE LAYER ════════════════════
+   Single source of truth for the Dashboard + Sectors tabs: the 683-asset Anchorage
+   universe (OVERVIEW_ASSETS), de-duplicated to one row per ticker, classified into
+   the 13-sector taxonomy. The live /api/quotes feed (top-100 from CoinMarketCap,
+   built in api/quotes.js) overlays price/marketCap/24h onto matching tickers via
+   refreshLiveData(). DATA[]/SECTORS{} above still power the historical charts and
+   ticker strip only.                                                              */
+
+// Re-classification fixes (keep 13 sectors, fix the flagged "Other"). Keyed by ticker
+// (no cross-sector ticker collisions for these). TODO: port upstream into the classifier.
+const SECTOR_OVERRIDES={ASTER:'DeFi',GWEI:'Infrastructure',STZAMAZAMAKMS:'Infrastructure',TEN:'Payments'};
+[typeof OVERVIEW_ASSETS!=='undefined'?OVERVIEW_ASSETS:[],typeof OVERVIEW_KEPT!=='undefined'?OVERVIEW_KEPT:[]]
+  .forEach(arr=>arr.forEach(a=>{if(SECTOR_OVERRIDES[a.ticker])a.sector=SECTOR_OVERRIDES[a.ticker];}));
+
+const USECTOR_DESC={
+  L1:'Foundational settlement blockchains with their own consensus and security. Core exposure to on-chain adoption and chain-level network effects — BTC and ETH anchor the group.',
+  L2:'Rollups and scaling networks that inherit L1 security while lowering fees and raising throughput. The battleground for application activity as base layers mature.',
+  DeFi:'Permissionless lending, trading, derivatives and liquidity protocols — the on-chain equivalents of exchanges, banks and market makers. TVL and fee revenue are the key metrics.',
+  Infrastructure:'Oracles, bridges, indexing, data availability, identity and middleware — the plumbing every other protocol depends on. Lower beta, more defensive within crypto.',
+  AI:'Decentralized compute, GPU networks and AI-agent coordination protocols building open markets for intelligence at the intersection of crypto incentives and AI demand.',
+  DePIN:'Decentralized physical-infrastructure networks — storage, wireless, sensors and compute — that coordinate real hardware with token incentives.',
+  Payments:'Value transfer, cross-border settlement and exchange/CeFi platform tokens. Crypto rails offer 24/7 global settlement that outpaces legacy correspondent banking.',
+  Stablecoin:'Fiat-pegged and stability-focused assets used for liquidity, settlement and on-chain cash management — the dollar layer of the market.',
+  Gaming:'Game, metaverse and consumer-entertainment tokens built around player ownership, in-game economies and creator monetization.',
+  Meme:'Community- and culture-driven tokens whose value is shaped mainly by attention, internet-native narratives and liquidity cycles. Highest volatility, sized accordingly.',
+  RWA:'Tokenized real-world assets — treasuries, credit, funds and commodities — bringing off-chain yield and collateral on-chain.',
+  NFT:'Collectibles, marketplaces and NFT-infrastructure tokens tied to digital ownership and royalty economies.',
+  Other:'Cross-functional or early-stage assets that do not yet map cleanly to a single category. Flagged for ongoing reclassification review.'
+};
+const USECTORS={};
+SECTOR_ORDER.forEach(k=>{const c=sectorColor(k);USECTORS[k]={label:SECTOR_LABELS[k]||k,color:c,bg:c+'14',desc:USECTOR_DESC[k]||''};});
+function uSectorMeta(k){return USECTORS[k]||{label:k,color:'#64748b',bg:'#f1f3f7',desc:''};}
+
+const cmcLogo=id=>`https://s2.coinmarketcap.com/static/img/coins/64x64/${id}.png`;
+function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function cleanName(n){return String(n||'').replace(/\s+on\s+[A-Za-z0-9 .\-]+$/,'').trim()||n;}
+function logoTag(a,cls){
+  const c=sectorColor(a.sector);
+  if(a.logo) return `<img class="${cls}" src="${cmcLogo(a.logo)}" alt="${esc(a.ticker)}" loading="lazy" data-tk="${esc(a.ticker)}" data-c="${c}" onerror="cmcLogoFail(this)">`;
+  return `<span class="${cls} lf" style="background:${c}1a;color:${c}">${esc(a.ticker).slice(0,3)}</span>`;
+}
+function cmcLogoFail(img){
+  const tk=img.dataset.tk||'',c=img.dataset.c||'#94a3b8';
+  const s=document.createElement('span');
+  s.className=img.className+(img.className.includes('lf')?'':' lf');
+  s.style.cssText=img.style.cssText;s.style.background=c+'1a';s.style.color=c;s.textContent=tk.slice(0,3);
+  img.replaceWith(s);
+}
+function animVal(el,to,fmtFn,dur){
+  if(!el)return;dur=dur||650;
+  const from=(typeof el._v==='number')?el._v:0; el._v=to;
+  const t0=performance.now();
+  function step(now){const k=Math.min(1,(now-t0)/dur),e=1-Math.pow(1-k,3);el.textContent=fmtFn(from+(to-from)*e);if(k<1)requestAnimationFrame(step);}
+  requestAnimationFrame(step);
+}
+function fmtUsd(v){
+  if(v==null||isNaN(v))return'—';
+  if(v>=1000)return'$'+v.toLocaleString('en-US',{maximumFractionDigits:0});
+  if(v>=1)return'$'+v.toFixed(2);
+  if(v>=0.01)return'$'+v.toFixed(4);
+  return'$'+v.toPrecision(2);
+}
+
+// ── de-duplicate OVERVIEW_ASSETS to one row per ticker (multichain folded) ──
+function buildUniverse(){
+  const by=new Map();
+  (typeof OVERVIEW_ASSETS!=='undefined'?OVERVIEW_ASSETS:[]).forEach(a=>{
+    if(!by.has(a.ticker))by.set(a.ticker,[]);by.get(a.ticker).push(a);
+  });
+  const out=[];
+  by.forEach((list,tk)=>{
+    const rep=list.find(x=>x.marketCap)||list.find(x=>x.id===tk)||list[0];
+    out.push({ticker:tk,name:cleanName(rep.name),sector:rep.sector||'Other',
+      marketCap:rep.marketCap||0,logo:rep.logo,kept:list.some(x=>x.kept),
+      summary:rep.summary||'',chains:list.length,price:null,change24h:null});
+  });
+  return out;
+}
+const UNI=buildUniverse();
+const UNI_BY_TKR={};UNI.forEach(a=>UNI_BY_TKR[a.ticker]=a);
+function uniAsset(tk){return UNI_BY_TKR[tk];}
+
+let U_TOTAL=0,U_BTC=0,U_ETH=0,U_SOL=0,U_EX=0,U_PRICED=0;
+const U_SECTOT={};
+function rankUniverse(){UNI.sort((a,b)=>b.marketCap-a.marketCap);let r=0;UNI.forEach(a=>a.rank=a.marketCap?(++r):null);}
+function recomputeUniverse(){
+  U_TOTAL=0;U_PRICED=0;Object.keys(U_SECTOT).forEach(k=>delete U_SECTOT[k]);
+  UNI.forEach(a=>{U_TOTAL+=a.marketCap;if(a.marketCap)U_PRICED++;U_SECTOT[a.sector]=(U_SECTOT[a.sector]||0)+a.marketCap;});
+  U_BTC=(uniAsset('BTC')||{}).marketCap||0;
+  U_ETH=(uniAsset('ETH')||{}).marketCap||0;
+  U_SOL=(uniAsset('SOL')||{}).marketCap||0;
+  U_EX=U_TOTAL-U_BTC-U_ETH;
+}
+rankUniverse();recomputeUniverse();
+
+// ── topbar + KPI fill (snapshot on load; refreshLiveData() re-runs after each poll) ──
+function paintHeader(){
+  animVal(document.getElementById('hdr-tot'),U_TOTAL,fmt);
+  animVal(document.getElementById('k-total'),U_TOTAL,fmt);
+  animVal(document.getElementById('k-btc'),U_TOTAL?U_BTC/U_TOTAL*100:0,v=>v.toFixed(1)+'%');
+  animVal(document.getElementById('hdr-dom'),U_TOTAL?U_BTC/U_TOTAL*100:0,v=>v.toFixed(1)+'%');
+  animVal(document.getElementById('k-eth'),U_TOTAL?U_ETH/U_TOTAL*100:0,v=>v.toFixed(1)+'%');
+  animVal(document.getElementById('k-ex'),U_EX,fmt);
+  const sc=document.getElementById('k-sectors');if(sc)sc.textContent=new Set(UNI.map(a=>a.sector)).size;
+  const note=document.getElementById('k-total-note');if(note)note.textContent=`${UNI.length} assets · ${U_PRICED} priced`;
+  const setPx=(id,a)=>{const el=document.getElementById(id);if(el)el.textContent=a&&a.price!=null?fmtUsd(a.price):'—';};
+  setPx('hdr-btc-px',uniAsset('BTC'));setPx('hdr-eth-px',uniAsset('ETH'));setPx('hdr-sol-px',uniAsset('SOL'));
+}
+// LIVE light state (green pulse when /api/quotes succeeds, red when it fails)
+function setLiveState(iso,ok){
+  const dot=document.getElementById('live-dot'),lbl=document.getElementById('live-lbl');
+  if(!dot)return;
+  if(ok){
+    dot.classList.add('on');dot.classList.remove('off');
+    dot.title='Live · CoinMarketCap · updated '+(iso?new Date(iso).toLocaleTimeString():'now');
+    if(lbl){lbl.textContent='LIVE';lbl.style.color='#16a34a';}
+  }else{
+    dot.classList.remove('on');dot.classList.add('off');
+    dot.title='Live feed unavailable — showing last snapshot';
+    if(lbl){lbl.textContent='SNAPSHOT';lbl.style.color='#ea3943';}
+  }
+}
+paintHeader();
 
 let ovState=null;
 
@@ -1807,8 +1972,15 @@ function initOverview(){
 /* ── Asset ticker strip ── */
 function buildAssetStrip(){
   const el=document.getElementById('asset-strip');
-  TICKER_ASSETS.forEach(({t,pct:pc,pos})=>{
+  if(!el)return;
+  el.innerHTML='';
+  TICKER_ASSETS.forEach(({t,pct:pcStatic,pos:posStatic})=>{
     const d=DATA.find(x=>x.t===t);
+    if(!d)return;
+    // Prefer live 24h change; fall back to the static seed value.
+    const live=LIVE_CHANGE[t];
+    const pos=(live!=null)?live>=0:posStatic;
+    const pc=(live!=null)?(live>=0?'+':'')+live.toFixed(1)+'%':pcStatic;
     const color=pos?'#16c784':'#ea3943';
     const card=document.createElement('div');
     card.className='asc';
@@ -1831,19 +2003,21 @@ function coinColor(ticker){
 function buildMarketTable(){
   const tbl=document.getElementById('market-table');
   if(!tbl)return;
-  tbl.innerHTML='<thead><tr><th style="width:34px">#</th><th>Asset</th><th class="r">Price</th><th class="r">Market Cap</th><th class="r">Market Share</th><th class="r">Sector</th></tr></thead>';
+  tbl.innerHTML='<thead><tr><th style="width:34px">#</th><th>Asset</th><th class="r">Price</th><th class="r">24h</th><th class="r">Market Cap</th><th class="r">Market Share</th><th class="r">Sector</th></tr></thead>';
   const tbody=document.createElement('tbody');
-  DATA.slice(0,12).forEach(a=>{
-    const meta=SECTORS[a.s],share=a.m/total*100;
-    const tr=document.createElement('tr');
-    tr.innerHTML=`<td><span class="rk">${a.r}</span></td>
-      <td><div class="ac"><div class="aico" style="background:${meta.bg};color:${meta.color};border-color:${meta.color}40">${a.t.slice(0,3)}</div>
-        <div><div class="asym">${a.t}</div><div class="aname-s">${a.n}</div></div></div></td>
-      <td class="r mono" style="color:#58667e">${a.p}</td>
-      <td class="r mono">${fmt(a.m)}</td>
-      <td class="r"><div class="share-cell"><div class="share-bar"><div class="share-fill" style="width:${Math.min(100,share).toFixed(1)}%;background:${coinColor(a.t)}"></div></div><span class="wpct">${share.toFixed(1)}%</span></div></td>
+  UNI.filter(a=>a.marketCap).slice(0,12).forEach((a,i)=>{
+    const meta=uSectorMeta(a.sector),share=a.marketCap/U_TOTAL*100;
+    const chg=a.change24h,chgTxt=chg==null?'—':(chg>=0?'+':'')+chg.toFixed(1)+'%',chgCol=chg==null?'#b0bac8':(chg>=0?'#16c784':'#ea3943');
+    const tr=document.createElement('tr');tr.className='fade-row';tr.style.animationDelay=(i*28)+'ms';
+    tr.innerHTML=`<td><span class="rk">${a.rank}</span></td>
+      <td><div class="ac">${logoTag(a,'coin-logo')}
+        <div><div class="asym">${esc(a.ticker)}</div><div class="aname-s">${esc(a.name)}</div></div></div></td>
+      <td class="r mono ${a.price==null?'px-na':''}">${a.price==null?'—':fmtUsd(a.price)}</td>
+      <td class="r mono" style="color:${chgCol}">${chgTxt}</td>
+      <td class="r mono">${fmt(a.marketCap)}</td>
+      <td class="r"><div class="share-cell"><div class="share-bar"><div class="share-fill" style="width:${Math.min(100,share).toFixed(1)}%;background:${meta.color}"></div></div><span class="wpct">${share.toFixed(1)}%</span></div></td>
       <td class="r" style="font-size:11px;color:${meta.color};font-weight:700">${meta.label}</td>`;
-    tr.onclick=()=>{switchTab('sectors');setTimeout(()=>openAsset(a.t),60);};
+    tr.onclick=()=>{switchTab('sectors');setTimeout(()=>openAsset(a.ticker),60);};
     tbody.appendChild(tr);
   });
   tbl.appendChild(tbody);
@@ -1873,35 +2047,38 @@ function syntheticSeries(ticker, labels){
   });
 }
 
-/* ── Donut ── */
+/* ── Donut: sector market share over the 13-sector universe ── */
 function buildDonut(mode){
   donutMode=mode;
-  const base=mode==='ex'?exTotal:total;
-  const tots=mode==='ex'?secTotEx:secTot;
-  const sk=Object.keys(SECTORS).filter(k=>tots[k]).sort((a,b)=>(tots[b]||0)-(tots[a]||0));
-  document.getElementById('donut-cv').textContent=mode==='ex'?48:50;
+  const ex=mode==='ex';
+  const tots={};
+  UNI.forEach(a=>{if(!a.marketCap)return;if(ex&&(a.ticker==='BTC'||a.ticker==='ETH'))return;tots[a.sector]=(tots[a.sector]||0)+a.marketCap;});
+  const base=Object.values(tots).reduce((s,v)=>s+v,0)||1;
+  const sk=Object.keys(tots).sort((a,b)=>tots[b]-tots[a]);
+  const ctr=document.querySelector('#pane-dashboard .donut-ctr');
+  if(ctr){ctr.querySelector('.donut-cv').textContent=sk.length;ctr.querySelector('.donut-cl').textContent='Sectors';}
   if(donutChart){donutChart.destroy();donutChart=null;}
   donutChart=new Chart(document.getElementById('donut-canvas'),{
     type:'doughnut',
-    data:{labels:sk.map(k=>SECTORS[k].label),datasets:[{
+    data:{labels:sk.map(k=>uSectorMeta(k).label),datasets:[{
       data:sk.map(k=>tots[k]||0),
-      backgroundColor:sk.map(k=>SECTORS[k].color+'cc'),
-      borderColor:sk.map(k=>SECTORS[k].color),
+      backgroundColor:sk.map(k=>uSectorMeta(k).color+'cc'),
+      borderColor:sk.map(k=>uSectorMeta(k).color),
       borderWidth:1.5,hoverOffset:6,
     }]},
-    options:{cutout:'68%',maintainAspectRatio:false,animation:{duration:350},plugins:{
+    options:{cutout:'68%',maintainAspectRatio:false,animation:{duration:450},plugins:{
       legend:{display:false},
       tooltip:{mode:'nearest',intersect:true,backgroundColor:'#fff',titleColor:'#0d1421',titleFont:{size:11,weight:'700'},bodyColor:'#3d4f6e',bodyFont:{size:11},borderColor:'#e8ecf2',borderWidth:1,padding:{x:12,y:8},boxPadding:4,usePointStyle:true,pointStyle:'circle',
-        callbacks:{title:ctx=>SECTORS[sk[ctx[0].dataIndex]]?.label||'',label:ctx=>{const m=tots[sk[ctx.dataIndex]]||0;return`  ${fmt(m)}  ·  ${pct(m,base)}`;}}}
+        callbacks:{title:ctx=>uSectorMeta(sk[ctx[0].dataIndex]).label,label:ctx=>{const m=tots[sk[ctx.dataIndex]]||0;return`  ${fmt(m)}  ·  ${pct(m,base)}`;}}}
     }}
   });
   const leg=document.getElementById('donut-legend');leg.innerHTML='';
   sk.forEach(k=>{
-    const m=tots[k]||0;
+    const m=tots[k]||0,meta=uSectorMeta(k);
     const r=document.createElement('div');r.className='dl-row';
     r.onclick=()=>{switchTab('sectors');setTimeout(()=>openSector(k),60)};
-    r.innerHTML=`<div class="dl-left"><div class="dl-dot" style="background:${SECTORS[k].color}"></div>
-      <div><div class="dl-name">${SECTORS[k].label}</div>
+    r.innerHTML=`<div class="dl-left"><div class="dl-dot" style="background:${meta.color}"></div>
+      <div><div class="dl-name">${meta.label}</div>
       <div class="dl-sub">${fmt(m)} · ${pct(m,base)}</div></div></div>`;
     leg.appendChild(r);
   });
@@ -2053,12 +2230,14 @@ function buildVolChart(){
 /* ── TradingView ── */
 function buildKlineDropdown(){
   const sel=document.getElementById('kline-sel');
-  const bySec={};DATA.forEach(a=>{(bySec[a.s]=bySec[a.s]||[]).push(a)});
-  Object.keys(SECTORS).forEach(sk=>{
+  // chartable assets = those with a TradingView symbol mapping, grouped by universe sector
+  const bySec={};
+  Object.keys(TV).forEach(tk=>{const a=uniAsset(tk);if(!a)return;(bySec[a.sector]=bySec[a.sector]||[]).push(a);});
+  SECTOR_ORDER.forEach(sk=>{
     if(!bySec[sk])return;
-    const og=document.createElement('optgroup');og.label=SECTORS[sk].label;
-    bySec[sk].sort((a,b)=>b.m-a.m).forEach(a=>{
-      const o=document.createElement('option');o.value=a.t;o.textContent=`${a.t}  —  ${a.n}`;og.appendChild(o);
+    const og=document.createElement('optgroup');og.label=uSectorMeta(sk).label;
+    bySec[sk].sort((a,b)=>b.marketCap-a.marketCap).forEach(a=>{
+      const o=document.createElement('option');o.value=a.ticker;o.textContent=`${a.ticker}  —  ${a.name}`;og.appendChild(o);
     });sel.appendChild(og);
   });
 }
@@ -2081,99 +2260,153 @@ function setIv(iv,el){document.querySelectorAll('.kiv').forEach(b=>b.classList.t
 
 /* ══════════════ SECTORS ══════════════ */
 let sectorsInited=false,activeSector=null,activeAsset=null;
+let sdSort={key:'mc',dir:-1};
+// universe assets in a sector: priced first (mcap desc), then unpriced (alpha)
+function secAssets(k){
+  return UNI.filter(a=>a.sector===k).sort((a,b)=>(b.marketCap-a.marketCap)||a.ticker.localeCompare(b.ticker));
+}
 function initSectors(){
   if(sectorsInited)return;sectorsInited=true;
+  renderSectorGrid();
+}
+function renderSectorGrid(){
   const grid=document.getElementById('sector-grid-el');
-  Object.keys(SECTORS).sort((a,b)=>(secTot[b]||0)-(secTot[a]||0)).forEach(k=>{
-    const meta=SECTORS[k],items=DATA.filter(a=>a.s===k).sort((a,b)=>b.m-a.m);
-    const sm=secTot[k]||0;
+  if(!grid)return;grid.innerHTML='';
+  Object.keys(USECTORS).filter(k=>secAssets(k).length).sort((a,b)=>(U_SECTOT[b]||0)-(U_SECTOT[a]||0)).forEach((k,idx)=>{
+    const meta=uSectorMeta(k),items=secAssets(k),sm=U_SECTOT[k]||0;
+    const share=U_TOTAL?sm/U_TOTAL*100:0;
+    const logos=items.filter(a=>a.logo).slice(0,3).map(a=>logoTag(a,'coin-logo')).join('');
+    const more=items.length>3?`<span class="sc-more">+${items.length-3}</span>`:'';
     const card=document.createElement('div');
-    card.className='sc-card';card.style.borderTopColor=meta.color;
-    card.innerHTML=`<div class="sc-name" style="color:${meta.color}">${meta.label}<span class="sc-cnt" style="background:${meta.bg};color:${meta.color}">${items.length}</span></div>
-      <div class="sc-desc">${meta.desc}</div>
-      <div class="sc-foot">
-        <div><div class="sc-stat-l">Mkt Cap</div><div class="sc-stat-v">${fmt(sm)}</div></div>
-        <div><div class="sc-stat-l">Share</div><div class="sc-stat-v">${pct(sm,total)}</div></div>
-        <div><div class="sc-stat-l">Leader</div><div class="sc-stat-v" style="color:${meta.color}">${items[0].t}</div></div>
-      </div>`;
+    card.className='sc-card';card.style.borderTopColor=meta.color;card.style.animationDelay=(idx*40)+'ms';
+    card.innerHTML=`
+      <div class="sc-top">
+        <div class="sc-name" style="color:${meta.color}">${meta.label}<span class="sc-cnt" style="background:${meta.bg};color:${meta.color}">${items.length}</span></div>
+        <div class="sc-logos">${logos}${more}</div>
+      </div>
+      <div class="sc-mcl">Market Cap</div>
+      <div class="sc-mc num-anim">${fmtCap(sm)}</div>
+      <div class="sc-bar"><div class="sc-bar-fill" style="background:${meta.color}"></div></div>
+      <div class="sc-row2"><span><b>${share<0.1?'<0.1':share.toFixed(1)}%</b> of market</span><span class="sc-view" style="color:${meta.color}">View →</span></div>
+      <div class="sc-desc">${meta.desc}</div>`;
     card.onclick=()=>openSector(k);grid.appendChild(card);
+    requestAnimationFrame(()=>{const f=card.querySelector('.sc-bar-fill');if(f)f.style.width=Math.max(2,Math.min(100,share)).toFixed(1)+'%';});
   });
 }
 function goGrid(){activeSector=null;activeAsset=null;document.getElementById('sv-grid').classList.remove('hidden');document.getElementById('sv-sector').classList.add('hidden');document.getElementById('sv-asset').classList.add('hidden');}
 function openSector(k){
-  activeSector=k;
-  const meta=SECTORS[k],items=DATA.filter(a=>a.s===k).sort((a,b)=>b.m-a.m),sm=secTot[k]||0;
+  activeSector=k;sdSort={key:'mc',dir:-1};
+  const meta=uSectorMeta(k),items=secAssets(k),sm=U_SECTOT[k]||0;
+  const priced=items.filter(a=>a.marketCap).length;
   document.getElementById('crumb-sector').textContent=meta.label;
   document.getElementById('sd-hdr-el').innerHTML=`
     <div class="sd-title" style="color:${meta.color}">${meta.label}</div>
     <div class="sd-desc-text">${meta.desc}</div>
     <div class="sd-stats">
-      <div><div class="sd-stat-l">Sector Mkt Cap</div><div class="sd-stat-v">${fmt(sm)}</div></div>
-      <div><div class="sd-stat-l">Market Share</div><div class="sd-stat-v">${pct(sm,total)}</div></div>
+      <div><div class="sd-stat-l">Sector Mkt Cap</div><div class="sd-stat-v">${fmtCap(sm)}</div></div>
+      <div><div class="sd-stat-l">Market Share</div><div class="sd-stat-v">${pct(sm,U_TOTAL)}</div></div>
       <div><div class="sd-stat-l">Assets</div><div class="sd-stat-v">${items.length}</div></div>
-      <div><div class="sd-stat-l">Largest</div><div class="sd-stat-v" style="color:${meta.color}">${items[0].t}</div></div>
+      <div><div class="sd-stat-l">Priced</div><div class="sd-stat-v">${priced}</div></div>
+      <div><div class="sd-stat-l">Largest</div><div class="sd-stat-v" style="color:${meta.color}">${items[0]?items[0].ticker:'—'}</div></div>
     </div>`;
-  const tbl=document.getElementById('sd-table');
-  tbl.innerHTML=`<thead><tr><th style="width:28px">#</th><th>Asset</th><th>Thesis</th><th class="r">Mkt Cap</th><th class="r">Price</th><th class="r">Sector Share</th></tr></thead>`;
-  const tbody=document.createElement('tbody');
-  items.forEach((a,i)=>{
-    const tr=document.createElement('tr');
-    tr.innerHTML=`<td><span class="rk">${i+1}</span></td>
-      <td><div class="ac"><div class="aico" style="background:${meta.bg};color:${meta.color};border-color:${meta.color}40">${a.t.slice(0,3)}</div>
-        <div><div class="asym">${a.t}</div><div class="aname-s">${a.n}</div></div></div></td>
-      <td style="font-size:11px;color:#58667e;max-width:320px;line-height:1.45">${(DESCS[a.t]||'').split('.')[0]}.</td>
-      <td class="r mono">${fmt(a.m)}</td><td class="r mono" style="color:#8a96aa">${a.p}</td>
-      <td class="r"><div class="wbar-wrap"><div class="wbar"><div class="wbar-fill" style="width:${Math.min(40,a.m/sm*80).toFixed(0)}px;background:${meta.color}"></div></div>
-        <span class="wpct">${pct(a.m,sm)}</span></div></td>`;
-    tr.onclick=()=>openAsset(a.t);tbody.appendChild(tr);
-  });
-  tbl.appendChild(tbody);
+  renderSectorTable(k);
   document.getElementById('sv-grid').classList.add('hidden');
   document.getElementById('sv-sector').classList.remove('hidden');
   document.getElementById('sv-asset').classList.add('hidden');
 }
+function setSdSort(key){if(sdSort.key===key)sdSort.dir*=-1;else sdSort={key,dir:key==='name'?1:-1};renderSectorTable(activeSector);}
+function renderSectorTable(k){
+  const meta=uSectorMeta(k),sm=U_SECTOT[k]||0;
+  let items=secAssets(k).slice();
+  const d=sdSort.dir;
+  items.sort((a,b)=>{
+    if(sdSort.key==='name')return d*a.ticker.localeCompare(b.ticker);
+    if(sdSort.key==='px')return d*(((a.price||-1))-((b.price||-1)));
+    if(sdSort.key==='chg')return d*(((a.change24h==null?-1e9:a.change24h))-((b.change24h==null?-1e9:b.change24h)));
+    return d*((a.marketCap||0)-(b.marketCap||0));
+  });
+  const arrow=key=>sdSort.key===key?(sdSort.dir<0?' ▾':' ▴'):'';
+  const tbl=document.getElementById('sd-table');
+  tbl.innerHTML=`<thead><tr><th style="width:28px">#</th>
+    <th style="cursor:pointer" onclick="setSdSort('name')">Asset${arrow('name')}</th>
+    <th>Thesis</th>
+    <th class="r" style="cursor:pointer" onclick="setSdSort('mc')">Mkt Cap${arrow('mc')}</th>
+    <th class="r" style="cursor:pointer" onclick="setSdSort('px')">Price${arrow('px')}</th>
+    <th class="r" style="cursor:pointer" onclick="setSdSort('chg')">24h${arrow('chg')}</th>
+    <th class="r" style="cursor:pointer" onclick="setSdSort('mc')">Sector Share${arrow('mc')}</th></tr></thead>`;
+  const tbody=document.createElement('tbody');
+  items.forEach((a,i)=>{
+    const thesis=(DESCS[a.ticker]||a.summary||'').split('. ')[0];
+    const sh=sm?a.marketCap/sm*100:0;
+    const chg=a.change24h,chgTxt=chg==null?'—':(chg>=0?'+':'')+chg.toFixed(1)+'%',chgCol=chg==null?'#b0bac8':(chg>=0?'#16c784':'#ea3943');
+    const tr=document.createElement('tr');tr.className='fade-row';tr.style.animationDelay=Math.min(i*16,400)+'ms';
+    tr.innerHTML=`<td><span class="rk">${i+1}</span></td>
+      <td><div class="ac">${logoTag(a,'coin-logo')}
+        <div><div class="asym">${esc(a.ticker)}</div><div class="aname-s">${esc(a.name)}</div></div></div></td>
+      <td style="font-size:11px;color:#58667e;max-width:340px;line-height:1.45">${esc(thesis)}${thesis?'.':'—'}</td>
+      <td class="r mono">${a.marketCap?fmt(a.marketCap):'—'}</td>
+      <td class="r mono ${a.price==null?'px-na':''}">${a.price==null?'—':fmtUsd(a.price)}</td>
+      <td class="r mono" style="color:${chgCol}">${chgTxt}</td>
+      <td class="r"><div class="wbar-wrap"><div class="wbar"><div class="wbar-fill" style="width:${Math.min(40,sh*0.8).toFixed(0)}px;background:${meta.color}"></div></div>
+        <span class="wpct">${a.marketCap?sh.toFixed(1)+'%':'—'}</span></div></td>`;
+    tr.onclick=()=>openAsset(a.ticker);tbody.appendChild(tr);
+  });
+  tbl.appendChild(tbody);
+}
 function goSector(){document.getElementById('sv-grid').classList.add('hidden');document.getElementById('sv-sector').classList.remove('hidden');document.getElementById('sv-asset').classList.add('hidden');}
 function assetNarrative(a,meta){
-  const share=pct(a.m,total),sectorShare=pct(a.m,secTot[a.s]||1);
+  const overview=DESCS[a.ticker]||a.summary||'This asset is part of the Anchorage-supported digital asset universe.';
+  const secShareTxt=a.marketCap?pct(a.marketCap,U_SECTOT[a.sector]||1):'—';
+  const shareTxt=a.marketCap?pct(a.marketCap,U_TOTAL):'an unpriced position';
+  const role=a.marketCap
+    ? `${a.name} sits in the ${meta.label} category, which represents ${pct(U_SECTOT[a.sector]||0,U_TOTAL)} of the universe market cap. Within that category, ${a.ticker} accounts for ${secShareTxt}, making it ${a.rank&&a.rank<=10?'one of the primary market-share drivers':'a smaller but still relevant contributor'} in the sector view.`
+    : `${a.name} sits in the ${meta.label} category. It currently has no live market cap in the snapshot — typically an early-stage, multi-chain, or non-tradeable listing — so it is shown for classification completeness rather than as a sized position.`;
   return `
     <div class="about-section">
       <div class="about-section-title">Overview</div>
-      <div>${DESCS[a.t]||'This asset is part of the covered digital asset universe.'}</div>
+      <div>${esc(overview)}</div>
     </div>
     <div class="about-section">
       <div class="about-section-title">Market Role</div>
-      <div>${a.n} sits in the ${meta.label} category, which represents ${pct(secTot[a.s]||0,total)} of the covered market cap. Within that category, ${a.t} accounts for ${sectorShare}, making it ${a.r<=5?'one of the primary market-share drivers':'a smaller but still relevant contributor'} in the sector view.</div>
+      <div>${esc(role)}</div>
     </div>
     <div class="about-section">
       <div class="about-section-title">What to Watch</div>
-      <div>For client education, focus on market cap rank, liquidity, sector concentration, and how the asset's use case connects to real network activity. Current market share is ${share}; changes in this share help show whether attention and capital are consolidating into larger networks or rotating toward smaller thematic assets.</div>
+      <div>For client education, focus on market cap rank, liquidity, sector concentration, and how the asset's use case connects to real network activity. Current market share is ${shareTxt}; changes in this share help show whether attention and capital are consolidating into larger networks or rotating toward smaller thematic assets.</div>
     </div>
     <div class="about-section">
       <div class="about-section-title">Client Framing</div>
-      <div>This page is intended as a market-structure explainer: price is only one signal, while market cap, dominance, sector share, volatility, and the asset's role in the crypto stack give a more complete picture of why the asset matters.</div>
+      <div>This page is a market-structure explainer: price is only one signal, while market cap, dominance, sector share and the asset's role in the crypto stack give a more complete picture of why the asset matters.</div>
     </div>`;
 }
 function openAsset(ticker){
   activeAsset=ticker;
-  const a=DATA.find(d=>d.t===ticker),meta=SECTORS[a.s];
+  const a=uniAsset(ticker);
+  if(!a)return;
+  const meta=uSectorMeta(a.sector);
   document.getElementById('crumb-back-sector').textContent=meta.label;
-  document.getElementById('crumb-asset').textContent=`${a.t} — ${a.n}`;
+  document.getElementById('crumb-asset').textContent=`${a.ticker} — ${a.name}`;
+  const pxTxt=a.price==null?'—':fmtUsd(a.price);
+  const chg=a.change24h;
+  const chgPill=chg==null?'':`<span class="pill" style="background:${chg>=0?'#e7f7ee':'#fdeaec'};color:${chg>=0?'#16a34a':'#ea3943'}">${chg>=0?'+':''}${chg.toFixed(1)}% 24h</span>`;
   document.getElementById('asset-hdr-el').innerHTML=`
     <div class="asset-hdr-top">
       <div class="asset-name-row">
-        <div class="asset-ico" style="background:${meta.bg};color:${meta.color};border-color:${meta.color}">${a.t.slice(0,3)}</div>
-        <div><div class="asset-ticker">${a.t}</div><div class="asset-fullname">${a.n}</div></div>
+        ${logoTag(a,'coin-logo lg')}
+        <div><div class="asset-ticker">${esc(a.ticker)}</div><div class="asset-fullname">${esc(a.name)}</div></div>
       </div>
-      <div class="asset-price-col"><div class="asset-price">${a.p}</div><div class="asset-mc">Market Cap: ${fmt(a.m)}</div></div>
+      <div class="asset-price-col"><div class="asset-price ${a.price==null?'px-na':''}">${pxTxt}</div><div class="asset-mc">Market Cap: ${fmtCap(a.marketCap)}</div></div>
     </div>
     <div class="asset-pills">
       <span class="pill" style="background:${meta.bg};color:${meta.color}"><span class="pdot" style="background:${meta.color}"></span>${meta.label}</span>
-      <span class="pill rank-pill">Rank #${a.r} by Mkt Cap</span>
-      <span class="pill rank-pill">Market Share: ${pct(a.m,total)}</span>
+      ${a.rank?`<span class="pill rank-pill">Rank #${a.rank} by Mkt Cap</span>`:''}
+      ${a.marketCap?`<span class="pill rank-pill">Market Share: ${pct(a.marketCap,U_TOTAL)}</span>`:'<span class="pill rank-pill">Unpriced listing</span>'}
+      ${chgPill}
+      ${a.kept?'<span class="pill" style="background:#e7f7ee;color:#0f9d58"><span class="pdot" style="background:#0f9d58"></span>In kept 54</span>':''}
     </div>`;
   document.getElementById('asset-about').innerHTML=`<div class="about-title">Asset Overview</div><div class="about-text">${assetNarrative(a,meta)}</div>`;
   document.getElementById('asset-stats').innerHTML=`<div class="about-title" style="margin-bottom:12px">Key Statistics</div>
-    ${[['Ticker',a.t],['Full Name',a.n],['Sector',meta.label],['Market Cap',fmt(a.m)],['Price (USD)',a.p],['Market Cap Rank',`#${a.r}`],['Market Share',pct(a.m,total)],['Sector Share',pct(a.m,secTot[a.s]||1)]]
+    ${[['Ticker',a.ticker],['Full Name',esc(a.name)],['Sector',meta.label],['Market Cap',fmtCap(a.marketCap)],['Price (USD)',pxTxt],['24h Change',chg==null?'—':(chg>=0?'+':'')+chg.toFixed(2)+'%'],['Market Cap Rank',a.rank?`#${a.rank}`:'—'],['Market Share',a.marketCap?pct(a.marketCap,U_TOTAL):'—'],['Sector Share',a.marketCap?pct(a.marketCap,U_SECTOT[a.sector]||1):'—'],['Chains listed',a.chains],['In kept 54',a.kept?'Yes':'No']]
       .map(([l,v])=>`<div class="stat-row"><span class="stat-lbl">${l}</span><span class="stat-val">${v}</span></div>`).join('')}`;
   document.getElementById('sv-grid').classList.add('hidden');
   document.getElementById('sv-sector').classList.add('hidden');
@@ -2183,9 +2416,71 @@ function openAsset(ticker){
   window.scrollTo({top:0,behavior:'smooth'});
 }
 
+/* ============== LIVE DATA (CoinMarketCap via /api/quotes) ============== */
+// Format a USD price to match the dashboard's existing style.
+function fmtPrice(p){
+  if(!isFinite(p))return'—';
+  if(p>=1000)return'$'+p.toLocaleString('en-US',{maximumFractionDigits:0});
+  if(p>=1)return'$'+p.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+  if(p>=0.01)return'$'+p.toFixed(4);
+  return'$'+p.toFixed(p>=0.0001?4:6);
+}
+
+// Re-render the Sectors tab in place after a live update (only the visible view).
+function refreshSectorsLive(){
+  if(!sectorsInited)return;
+  const gridVisible=!document.getElementById('sv-grid').classList.contains('hidden');
+  const sectorVisible=!document.getElementById('sv-sector').classList.contains('hidden');
+  if(gridVisible)renderSectorGrid();
+  else if(sectorVisible&&activeSector)renderSectorTable(activeSector);
+}
+
+// Overlay live CMC numbers (top-100 from /api/quotes) onto the universe (by ticker)
+// and the illustrative DATA[] (by symbol), then re-rank, recompute and re-render.
+async function refreshLiveData(){
+  try{
+    const res=await fetch('/api/quotes',{cache:'no-store'});
+    if(!res.ok)throw new Error('HTTP '+res.status);
+    const payload=await res.json();
+    const rows=(payload&&payload.data)||[];
+    if(!rows.length)throw new Error('empty payload');
+    let hits=0;
+    rows.forEach(c=>{
+      // universe overlay (drives Dashboard + Sectors + topbar)
+      const u=uniAsset(c.symbol);
+      if(u){
+        if(typeof c.market_cap==='number'&&c.market_cap>0)u.marketCap=c.market_cap;
+        if(typeof c.price==='number')u.price=c.price;
+        if(typeof c.percent_change_24h==='number')u.change24h=c.percent_change_24h;
+        hits++;
+      }
+      // illustrative DATA overlay (ticker strip + chart picker)
+      const d=DATA.find(x=>x.t===c.symbol);
+      if(d){
+        if(typeof c.market_cap==='number'&&c.market_cap>0)d.m=c.market_cap;
+        if(typeof c.price==='number')d.p=fmtPrice(c.price);
+      }
+      if(typeof c.percent_change_24h==='number')LIVE_CHANGE[c.symbol]=c.percent_change_24h;
+    });
+    if(!hits)throw new Error('no matching assets');
+    rankUniverse();recomputeUniverse();
+    DATA.sort((a,b)=>b.m-a.m);DATA.forEach((d,i)=>d.r=i+1);recomputeAggregates();
+    paintHeader();
+    if(overviewInited){buildAssetStrip();buildMarketTable();buildDonut(donutMode);}
+    refreshSectorsLive();
+    setLiveState(payload.updated,true);
+  }catch(err){
+    setLiveState(null,false);
+  }
+}
+
 /* Overview is the default-active pane — initialise it on load (not only on tab click). */
 if(document.readyState!=='loading'){initAnchorageOverview();}
 else{document.addEventListener('DOMContentLoaded',initAnchorageOverview);}
+
+/* Kick off live data immediately, then poll every 60s (server caches CMC at 300s). */
+refreshLiveData();
+setInterval(refreshLiveData,60000);
 </script>
 </body>
 </html>
