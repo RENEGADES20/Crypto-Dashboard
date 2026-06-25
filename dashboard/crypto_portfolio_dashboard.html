@@ -48,11 +48,11 @@ html{zoom:1.25}
 .overview-bubbles{position:relative;height:540px;overflow:hidden;touch-action:none;user-select:none}
 .overview-bubbles.ov-map{cursor:grab}
 .overview-bubbles.ov-map.ov-panning{cursor:grabbing}
-.overview-stage{position:absolute;left:0;top:0;width:0;height:0;transform-origin:0 0}
-.overview-bubble{position:absolute;display:flex;align-items:center;justify-content:center;border-radius:50%;background:#fff;border:1.5px solid #cbd5e1;box-shadow:0 6px 16px rgba(15,23,42,.14);cursor:pointer;overflow:hidden;padding:0;transition:transform .2s ease,opacity .28s ease,box-shadow .2s ease;transform:translate(-50%,-50%);z-index:1}
+.overview-stage{position:absolute;left:0;top:0;width:0;height:0;transform-origin:0 0;will-change:transform}
+.overview-bubble{position:absolute;display:flex;align-items:center;justify-content:center;border-radius:50%;background:#fff;border:3px solid #cbd5e1;cursor:pointer;overflow:hidden;padding:0;transition:transform .15s ease,opacity .28s ease;transform:translate(-50%,-50%);z-index:1;contain:layout style}
 .overview-bubble img{width:100%;height:100%;object-fit:contain;border-radius:50%;display:block;pointer-events:none}
 .overview-bubble.ov-nologo{border-width:0}
-.overview-bubble:hover{transform:translate(-50%,-50%) scale(1.18);z-index:30;box-shadow:0 12px 28px rgba(15,23,42,.28)}
+.overview-bubble:hover{transform:translate(-50%,-50%) scale(1.18);z-index:30;box-shadow:0 8px 20px rgba(15,23,42,.3)}
 .overview-rules-panel{background:#fff;border:1px solid #e8ecf2;border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:12px;transition:transform .3s ease,opacity .3s ease}
 .overview-rules-panel.is-collapsed{transform:translateX(6px);opacity:.92}
 .overview-rules-panel h3{font-size:14px;font-weight:800;color:#0d1421}
@@ -1576,7 +1576,7 @@ function renderAnchorageOverview(){
   const n=assets.length||1;
   const maxC=Math.max(1,...assets.map(a=>a.marketCap||0));
   const lnMax=Math.log10(maxC+1)||1;
-  const cfg=overviewFilterOn?{floor:34,span:66,pad:4}:{floor:10,span:44,pad:2};
+  const cfg=overviewFilterOn?{floor:34,span:66,pad:4}:{floor:15,span:46,pad:3};
   const sizeFor=c=>c?cfg.floor+Math.pow(Math.log10(c+1)/lnMax,1.35)*cfg.span:cfg.floor;
   const GA=Math.PI*(3-Math.sqrt(5));
   // single cluster: golden-angle spiral seed (biggest near centre), settled by physics
@@ -1602,15 +1602,19 @@ function renderAnchorageOverview(){
       }
     }
   }
-  // settle: centre gravity (stronger vertically -> wider ellipse) + collision
-  for(let s=0;s<(overviewFilterOn?180:120);s++){
-    const G=0.02;
+  // ---- settle ----
+  // 683: pack to a non-overlapping ellipse, then viewed statically via pan/zoom.
+  // 54 : light pre-settle; a live gravity loop (below) keeps it organic & re-packs.
+  function gravStep(G){
     for(const nd of nodes){if(nd.dragging)continue; nd.vx+=-nd.x*G; nd.vy+=-nd.y*G*1.55;}
     collide();
     for(const nd of nodes){if(nd.dragging)continue; nd.x+=nd.vx; nd.y+=nd.vy; nd.vx*=0.84; nd.vy*=0.84;}
   }
-  for(let s=0;s<10;s++) collide();
+  for(let s=0;s<(overviewFilterOn?90:200);s++) gravStep(0.02);
+  // drive residual overlaps to zero — the 683 map must never stack
+  for(let s=0;s<(overviewFilterOn?140:340);s++) collide();
 
+  const LOGO=id=>`https://s2.coinmarketcap.com/static/img/coins/64x64/${id}.png`;
   // build bubbles
   nodes.forEach(nd=>{
     const a=nd.a, size=nd.r*2, color=sectorColor(a.sector);
@@ -1620,10 +1624,9 @@ function renderAnchorageOverview(){
     b.style.borderColor=color; b.style.opacity='0';
     if(a.logo){
       const img=document.createElement('img');
-      img.src=`https://s2.coinmarketcap.com/static/img/coins/64x64/${a.logo}.png`;
-      img.alt=a.ticker; img.loading='lazy'; img.draggable=false;
+      img.src=LOGO(a.logo); img.alt=a.ticker; img.loading='lazy'; img.draggable=false;
       img.addEventListener('error',()=>{b.classList.add('ov-nologo');b.style.background=`radial-gradient(circle at 32% 28%, ${color}, ${color}D0)`;img.remove();});
-      b.appendChild(img);
+      b.appendChild(img); nd._img=img;
     } else {
       b.classList.add('ov-nologo');
       b.style.background=`radial-gradient(circle at 32% 28%, ${color}, ${color}D0)`;
@@ -1636,12 +1639,12 @@ function renderAnchorageOverview(){
   });
 
   // Controls differ by view:
-  //   683 (filter off): map controls (wheel-zoom + drag-pan); bubbles NOT draggable.
-  //   54  (filter on):  draggable bubbles; NO zoom/pan — auto-fit shows all 54.
+  //   683 (filter off): map — wheel-zoom + drag-pan + viewport culling; bubbles static.
+  //   54  (filter on):  draggable bubbles with a live gravity loop; no zoom/pan; auto-fit.
   const interactiveBubbles=overviewFilterOn;
   const mapControls=!overviewFilterOn;
   const view={x:0,y:0,zoom:1};
-  let minZoom=0.3, maxZoom=6, mode=null, last=null, dragNode=null, downBubble=null, moved=false;
+  let minZoom=0.3, maxZoom=6, mode=null, last=null, dragNode=null, downBubble=null, moved=false, raf=0, idle=0;
   const apply=()=>{stage.style.transform=`translate(${view.x.toFixed(1)}px,${view.y.toFixed(1)}px) scale(${view.zoom.toFixed(4)})`;};
   const paint=()=>{for(const nd of nodes){nd.el.style.left=`${nd.x.toFixed(1)}px`; nd.el.style.top=`${nd.y.toFixed(1)}px`;}};
   function fit(){
@@ -1652,8 +1655,36 @@ function renderAnchorageOverview(){
     minZoom=z*0.5; maxZoom=z*16; view.zoom=z;
     view.x=W/2-((mnx+mxx)/2)*z; view.y=H/2-((mny+mxy)/2)*z;
   }
-  paint(); fit(); apply();
+  // viewport culling (683): hide + unload bubbles outside view so pan/zoom stays light and
+  // off-screen logos free memory; they reload on return. Hysteresis avoids edge thrash.
+  function cull(){
+    if(!mapControls) return;
+    const W=container.clientWidth, H=container.clientHeight, m=140;
+    for(const nd of nodes){
+      const sx=nd.x*view.zoom+view.x, sy=nd.y*view.zoom+view.y, sr=nd.r*view.zoom+4;
+      const vis=(sx+sr>-m)&&(sx-sr<W+m)&&(sy+sr>-m)&&(sy-sr<H+m);
+      const hidden=nd.el.style.display==='none';
+      if(vis&&hidden){nd.el.style.display=''; if(nd._img&&!nd._img.getAttribute('src'))nd._img.setAttribute('src',LOGO(nd.a.logo));}
+      else if(!vis&&!hidden){nd.el.style.display='none'; if(nd._img)nd._img.removeAttribute('src');}
+    }
+  }
+  paint(); fit(); apply(); cull();
   if(mapControls) container.classList.add('ov-map'); else container.classList.remove('ov-map');
+
+  // ---- 54 live gravity loop: organic settle that re-packs after drags, sleeps when calm ----
+  function loop(){
+    raf=0;
+    const px=nodes.map(nd=>nd.x), py=nodes.map(nd=>nd.y);
+    const G=dragNode?0.0035:0.006;   // gentle: just holds the cluster together
+    for(const nd of nodes){if(nd.dragging)continue; nd.vx+=-nd.x*G; nd.vy+=-nd.y*G*1.25; nd.x+=nd.vx; nd.y+=nd.vy; nd.vx*=0.82; nd.vy*=0.82;}
+    for(let s=0;s<5;s++) collide();   // collision dominates each frame
+    let move=0; for(let i=0;i<n;i++) move+=Math.abs(nodes[i].x-px[i])+Math.abs(nodes[i].y-py[i]);
+    paint();
+    if(dragNode) idle=0; else if(move/n<0.08) idle++; else idle=0;
+    if(idle<24){ raf=requestAnimationFrame(loop); }
+    else { for(let s=0;s<90;s++) collide(); paint(); }   // clean-up burst on sleep -> no overlap at rest
+  }
+  function wake(){ if(!interactiveBubbles) return; idle=0; if(!raf) raf=requestAnimationFrame(loop); }
 
   function onWheel(e){
     e.preventDefault();
@@ -1661,15 +1692,15 @@ function renderAnchorageOverview(){
     const mx=e.clientX-rect.left, my=e.clientY-rect.top;
     const wx=(mx-view.x)/view.zoom, wy=(my-view.y)/view.zoom;
     view.zoom=Math.max(minZoom,Math.min(maxZoom,view.zoom*Math.exp(-e.deltaY*0.0015)));
-    view.x=mx-wx*view.zoom; view.y=my-wy*view.zoom; apply();
+    view.x=mx-wx*view.zoom; view.y=my-wy*view.zoom; apply(); cull();
   }
   function onDown(e){
     if(e.button) return;
     const bub=e.target.closest('.overview-bubble');
     moved=false; last={x:e.clientX,y:e.clientY}; downBubble=bub;
-    if(interactiveBubbles && bub && bub._node){mode='drag'; dragNode=bub._node; dragNode.dragging=true;}
+    if(interactiveBubbles && bub && bub._node){mode='drag'; dragNode=bub._node; dragNode.dragging=true; wake();}
     else if(mapControls){mode='pan'; container.classList.add('ov-panning');}
-    else { mode='tap'; }   // 54 background: no pan, just allow tap-select
+    else { mode='tap'; }
     window.addEventListener('pointermove',onMove);
     window.addEventListener('pointerup',onUp);
     e.preventDefault();
@@ -1677,18 +1708,19 @@ function renderAnchorageOverview(){
   function onMove(e){
     const dx=e.clientX-last.x, dy=e.clientY-last.y; last={x:e.clientX,y:e.clientY};
     if(Math.abs(dx)+Math.abs(dy)>1) moved=true;
-    if(mode==='pan'){view.x+=dx; view.y+=dy; apply();}
-    else if(mode==='drag'&&dragNode){dragNode.x+=dx/view.zoom; dragNode.y+=dy/view.zoom; for(let s=0;s<5;s++)collide(); paint();}
+    if(mode==='pan'){view.x+=dx; view.y+=dy; apply(); cull();}
+    else if(mode==='drag'&&dragNode){dragNode.x+=dx/view.zoom; dragNode.y+=dy/view.zoom; wake();}
   }
   function onUp(){
-    if(mode==='drag'&&dragNode) dragNode.dragging=false;
+    if(mode==='drag'&&dragNode){dragNode.dragging=false; wake();}   // release -> gravity re-packs
     if(!moved && downBubble && downBubble._node) updateOverviewRule(downBubble._node.a);
     mode=null; dragNode=null; downBubble=null; container.classList.remove('ov-panning');
     window.removeEventListener('pointermove',onMove); window.removeEventListener('pointerup',onUp);
   }
   if(mapControls) container.addEventListener('wheel',onWheel,{passive:false});
   container.addEventListener('pointerdown',onDown);
-  container._ovCleanup=()=>{container.removeEventListener('wheel',onWheel); container.removeEventListener('pointerdown',onDown); window.removeEventListener('pointermove',onMove); window.removeEventListener('pointerup',onUp); container.classList.remove('ov-map','ov-panning');};
+  if(interactiveBubbles) wake();   // start the live loop (settles then sleeps)
+  container._ovCleanup=()=>{if(raf)cancelAnimationFrame(raf); container.removeEventListener('wheel',onWheel); container.removeEventListener('pointerdown',onDown); window.removeEventListener('pointermove',onMove); window.removeEventListener('pointerup',onUp); container.classList.remove('ov-map','ov-panning');};
 
   ovState={nodes,view,fit,apply,paint};
   renderOverviewLegend(assets);
