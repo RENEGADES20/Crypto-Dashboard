@@ -385,24 +385,19 @@ table.at tbody tr:last-child td{border-bottom:none}
       </div>
     </div>
 
-    <!-- Crypto Market Cap (CMC style) -->
-    <div class="card" style="padding:16px;margin-bottom:0">
-      <div class="card-hdr" style="margin-bottom:4px">
-        <div>
-          <div class="card-title">Crypto Market Cap</div>
-          <div class="chart-sub">Hover for the floating legend. Select a coin to compare.</div>
-          <div class="mktcap-top">
-            <span class="mktcap-big" id="mktcap-big">—</span>
-            <span class="mktcap-sub">Volume (24h)&nbsp; <strong id="mktcap-vol">—</strong></span>
-          </div>
-        </div>
-        <select class="mini-select" id="mktcap-coin" onchange="setMktCapCoin(this.value)"></select>
-        <div class="tog" id="mktcap-tog">
-          <span class="tog-btn on" onclick="setMktCapPeriod('30d',this)">30d</span>
-          <span class="tog-btn" onclick="setMktCapPeriod('1y',this)">1y</span>
+    <!-- TradingView K-Line (moved up into the donut row) -->
+    <div class="card" style="padding:0;overflow:hidden;margin-bottom:0">
+      <div class="kline-hdr">
+        <span class="card-title" style="color:#8a96aa">Price Chart (TradingView)</span>
+        <select class="kline-select" id="kline-sel" onchange="klineChange()"></select>
+        <div class="kline-ivs">
+          <span class="kiv" onclick="setIv('60',this)">1H</span>
+          <span class="kiv" onclick="setIv('D',this)">1D</span>
+          <span class="kiv on" onclick="setIv('W',this)">1W</span>
+          <span class="kiv" onclick="setIv('M',this)">1M</span>
         </div>
       </div>
-      <div class="ch280"><canvas id="mktcap-canvas"></canvas></div>
+      <div class="kline-body"><div id="tv-embed"></div></div>
     </div>
   </div>
 
@@ -441,19 +436,24 @@ table.at tbody tr:last-child td{border-bottom:none}
     <div class="table-scroll"><table class="market-table" id="market-table"></table></div>
   </div>
 
-  <!-- TradingView K-Line -->
-  <div class="card" style="padding:0;overflow:hidden">
-    <div class="kline-hdr">
-      <span class="card-title" style="color:#8a96aa">Price Chart (TradingView)</span>
-      <select class="kline-select" id="kline-sel" onchange="klineChange()"></select>
-      <div class="kline-ivs">
-        <span class="kiv" onclick="setIv('60',this)">1H</span>
-        <span class="kiv" onclick="setIv('D',this)">1D</span>
-        <span class="kiv on" onclick="setIv('W',this)">1W</span>
-        <span class="kiv" onclick="setIv('M',this)">1M</span>
+  <!-- Crypto Market Cap (CMC style) — moved to the bottom, full width -->
+  <div class="card" style="padding:16px">
+    <div class="card-hdr" style="margin-bottom:4px">
+      <div>
+        <div class="card-title">Crypto Market Cap</div>
+        <div class="chart-sub">Hover for the floating legend. Select a coin to compare.</div>
+        <div class="mktcap-top">
+          <span class="mktcap-big" id="mktcap-big">—</span>
+          <span class="mktcap-sub">Volume (24h)&nbsp; <strong id="mktcap-vol">—</strong></span>
+        </div>
+      </div>
+      <select class="mini-select" id="mktcap-coin" onchange="setMktCapCoin(this.value)"></select>
+      <div class="tog" id="mktcap-tog">
+        <span class="tog-btn on" onclick="setMktCapPeriod('30d',this)">30d</span>
+        <span class="tog-btn" onclick="setMktCapPeriod('1y',this)">1y</span>
       </div>
     </div>
-    <div class="kline-body"><div id="tv-embed"></div></div>
+    <div class="ch280"><canvas id="mktcap-canvas"></canvas></div>
   </div>
 </div>
 
@@ -470,7 +470,7 @@ table.at tbody tr:last-child td{border-bottom:none}
   </div>
   <div id="sv-asset" class="hidden">
     <div class="back-row">
-      <div class="back-btn" onclick="goSector()">← <span id="crumb-back-sector"></span></div>
+      <div class="back-btn" onclick="backFromAsset()">← <span id="crumb-back-sector"></span></div>
       <span class="crumb">/ <span id="crumb-asset"></span></span>
     </div>
     <div class="asset-hdr" id="asset-hdr-el"></div>
@@ -1984,7 +1984,7 @@ function buildAssetStrip(){
     const color=pos?'#16c784':'#ea3943';
     const card=document.createElement('div');
     card.className='asc';
-    card.onclick=()=>{switchTab('sectors');setTimeout(()=>openAsset(t),80);};
+    card.onclick=()=>{switchTab('sectors');setTimeout(()=>openAsset(t,'dashboard'),80);};
     card.innerHTML=`<div>
       <div class="asc-nm">${d.n}</div>
       <div class="asc-sym" style="color:${COIN_COLORS[t]||'#0d1421'}">${t}</div>
@@ -2017,7 +2017,7 @@ function buildMarketTable(){
       <td class="r mono">${fmt(a.marketCap)}</td>
       <td class="r"><div class="share-cell"><div class="share-bar"><div class="share-fill" style="width:${Math.min(100,share).toFixed(1)}%;background:${meta.color}"></div></div><span class="wpct">${share.toFixed(1)}%</span></div></td>
       <td class="r" style="font-size:11px;color:${meta.color};font-weight:700">${meta.label}</td>`;
-    tr.onclick=()=>{switchTab('sectors');setTimeout(()=>openAsset(a.ticker),60);};
+    tr.onclick=()=>{switchTab('sectors');setTimeout(()=>openAsset(a.ticker,'dashboard'),60);};
     tbody.appendChild(tr);
   });
   tbl.appendChild(tbody);
@@ -2354,6 +2354,12 @@ function renderSectorTable(k){
   tbl.appendChild(tbody);
 }
 function goSector(){document.getElementById('sv-grid').classList.add('hidden');document.getElementById('sv-sector').classList.remove('hidden');document.getElementById('sv-asset').classList.add('hidden');}
+// Where the current asset view was opened from, so "back" returns to the right place.
+let assetOrigin='sector';
+function backFromAsset(){
+  if(assetOrigin==='dashboard'){goGrid();switchTab('dashboard');}
+  else goSector();
+}
 function assetNarrative(a,meta){
   const overview=DESCS[a.ticker]||a.summary||'This asset is part of the Anchorage-supported digital asset universe.';
   const secShareTxt=a.marketCap?pct(a.marketCap,U_SECTOT[a.sector]||1):'—';
@@ -2379,12 +2385,13 @@ function assetNarrative(a,meta){
       <div>This page is a market-structure explainer: price is only one signal, while market cap, dominance, sector share and the asset's role in the crypto stack give a more complete picture of why the asset matters.</div>
     </div>`;
 }
-function openAsset(ticker){
+function openAsset(ticker,origin){
   activeAsset=ticker;
+  assetOrigin=origin||'sector';
   const a=uniAsset(ticker);
   if(!a)return;
   const meta=uSectorMeta(a.sector);
-  document.getElementById('crumb-back-sector').textContent=meta.label;
+  document.getElementById('crumb-back-sector').textContent=assetOrigin==='dashboard'?'Dashboard':meta.label;
   document.getElementById('crumb-asset').textContent=`${a.ticker} — ${a.name}`;
   const pxTxt=a.price==null?'—':fmtUsd(a.price);
   const chg=a.change24h;
