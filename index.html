@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Digital Asset Research · rebel Financial</title>
+<title>Digital Asset Research &middot; rebel Financial</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
@@ -33,7 +33,44 @@ html{zoom:1.25}
 .pane{display:none;padding:14px 24px 40px;max-width:1480px;margin:0 auto}
 .pane.active{display:block}
 .overview-map-pane{max-width:1580px;padding:8px 16px 0;overflow:hidden}
-.framework-map-frame{display:block;width:100%;height:calc(100vh - 102px);min-height:0;border:0;border-radius:10px;background:#edf1f6;box-shadow:0 8px 24px rgba(16,24,40,.08);overflow:hidden}
+.overview-shell{background:#fff;border:1px solid #e8ecf2;border-radius:18px;padding:20px;overflow:hidden}
+.overview-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:16px}
+.overview-copy{display:flex;flex-direction:column;gap:6px}
+.overview-eyebrow{font-size:10px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:#5a6b8a}
+.overview-copy h1{font-size:28px;font-weight:800;color:#0d1421;animation:overviewFadeUp .7s ease both}
+.overview-copy p{font-size:13px;color:#6b778c;max-width:720px;line-height:1.6}
+.overview-toggle{display:inline-flex;align-items:center;gap:8px;padding:9px 12px;border:1px solid #e8ecf2;border-radius:999px;background:#f7f8fc;color:#4b5563;font-size:12px;font-weight:700;cursor:pointer;transition:all .2s ease;white-space:nowrap}
+.overview-toggle.active{background:#3861fb;color:#fff;border-color:#3861fb;box-shadow:0 8px 20px rgba(56,97,251,.18)}
+.overview-toggle:hover{transform:translateY(-1px)}
+.overview-body{display:grid;grid-template-columns:1.25fr .75fr;gap:16px}
+.overview-bubble-card{background:linear-gradient(180deg,#f7f9fe 0%,#eef3f9 100%);border:1px solid #e9edf5;border-radius:16px;padding:16px;min-height:560px;position:relative;overflow:hidden}
+.overview-bubble-card::before{content:"";position:absolute;inset:auto 0 0 auto;width:240px;height:240px;border-radius:50%;background:radial-gradient(circle,rgba(56,97,251,.12),transparent 70%);pointer-events:none}
+.overview-bubbles{position:relative;height:520px;overflow:hidden}
+.overview-bubble{position:absolute;display:flex;align-items:center;justify-content:center;border-radius:50%;color:#fff;font-weight:800;font-size:11px;letter-spacing:.02em;border:1px solid rgba(255,255,255,.26);box-shadow:0 10px 24px rgba(15,23,42,.12);cursor:pointer;transition:transform .28s ease,opacity .28s ease,left .45s ease,top .45s ease;transform:translate(-50%,-50%)}
+.overview-bubble:hover{transform:translate(-50%,-50%) scale(1.05)}
+.overview-bubble small{font-size:9px;opacity:.85}
+.overview-rules-panel{background:#fff;border:1px solid #e8ecf2;border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:12px;transition:transform .3s ease,opacity .3s ease}
+.overview-rules-panel.is-collapsed{transform:translateX(6px);opacity:.92}
+.overview-rules-panel h3{font-size:14px;font-weight:800;color:#0d1421}
+.overview-rules-panel .rules-copy{font-size:12px;color:#5f6b7c;line-height:1.65}
+.overview-rule-pill{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;background:#eff4ff;color:#3861fb;font-size:11px;font-weight:700;width:max-content}
+.overview-rule-card{background:#f8fafc;border:1px solid #eef2f6;border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:8px}
+.overview-rule-card strong{font-size:12px;color:#0d1421}
+.overview-rule-card span{font-size:11px;color:#64748b;line-height:1.5}
+.overview-status{font-size:11px;color:#64748b;font-weight:700}
+.overview-legend{display:flex;flex-wrap:wrap;gap:6px 13px;margin-top:10px}
+.ov-leg{display:inline-flex;align-items:center;gap:5px;font-size:10px;font-weight:600;color:#5f6b7c}
+.ov-leg i{width:9px;height:9px;border-radius:3px;display:inline-block;flex:0 0 auto}
+.ov-leg b{color:#0d1421;font-weight:800}
+.ov-rule-meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.ov-sector{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:999px;font-size:11px;font-weight:800}
+.ov-sector i{width:7px;height:7px;border-radius:50%}
+.ov-mc{font-size:13px;font-weight:800;color:#0d1421}
+.ov-badge{font-size:10px;font-weight:800;padding:3px 9px;border-radius:999px;white-space:nowrap}
+.ov-kept{background:#e7f7ee;color:#0f9d58}
+.ov-out{background:#f1f3f7;color:#8a96aa}
+.ov-summary{font-size:12px;color:#4b5563;line-height:1.62}
+@keyframes overviewFadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 
 /* ── Asset ticker strip ── */
 .asset-strip{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:12px}
@@ -229,7 +266,7 @@ table.at tbody tr:last-child td{border-bottom:none}
     <div class="ts"><div class="ts-l">BTC Dom.</div><div class="ts-v" id="hdr-btc" style="color:#f7931a">—</div></div>
     <div class="ts"><div class="ts-l">ETH Share</div><div class="ts-v" id="hdr-eth" style="color:#627eea">—</div></div>
     <div class="ts"><div class="ts-l">Ex-BTC/ETH</div><div class="ts-v" id="hdr-ex" style="color:#10b981">—</div></div>
-    <div class="ts"><div class="ts-l">As of</div><div class="ts-v" style="color:#8a96aa;font-size:11px">Jun 2026</div></div>
+    <div class="ts"><div class="ts-l">As of</div><div class="ts-v" style="color:#8a96aa;font-size:11px">May 2025</div></div>
   </div>
 </header>
 
@@ -241,7 +278,36 @@ table.at tbody tr:last-child td{border-bottom:none}
 
 <!-- == OVERVIEW / FRAMEWORK MAP == -->
 <div class="pane active overview-map-pane" id="pane-overview">
-  <iframe class="framework-map-frame" id="framework-map-frame" title="Crypto Classification Map" scrolling="no"></iframe>
+  <div class="overview-shell">
+    <div class="overview-head">
+      <div class="overview-copy">
+        <div class="overview-eyebrow">Supported by Anchorage</div>
+        <h1>Anchorage Universe</h1>
+        <p>The full Anchorage-supported universe — <strong>683 assets</strong> classified across 13 sectors — shown as a market-cap-weighted bubble map. Toggle the filter to narrow to the <strong>54 kept</strong> assets that pass the selection rules and feed the factor model.</p>
+      </div>
+      <button class="overview-toggle" id="overview-filter-toggle" type="button" aria-pressed="false">Show 54 kept</button>
+    </div>
+    <div class="overview-body">
+      <div class="overview-bubble-card">
+        <div class="overview-status" id="overview-filter-status">Full universe · 683 assets</div>
+        <div class="overview-bubbles" id="overview-bubbles"></div>
+        <div class="overview-legend" id="overview-legend"></div>
+      </div>
+      <aside class="overview-rules-panel is-collapsed" id="overview-rules-panel">
+        <div class="overview-rule-pill">Selection rules</div>
+        <h3 id="overview-rule-title">From 683 to 54</h3>
+        <p class="rules-copy" id="overview-rule-body">Hover any bubble for its sector, market cap, and role. The full universe is every Anchorage-supported asset; the filter keeps only the assets that survive the screening rules below.</p>
+        <div class="overview-rule-card">
+          <strong>How the 54 are kept</strong>
+          <span>Start from 683 Anchorage-supported assets. Drop derivatives and wrapped/staked variants, then merge multi-chain duplicates into one ticker (e.g. ETH on Arbitrum / Linea fold into ETH). Stablecoins, meme, NFT, gaming, and RWA pure-plays are set aside, leaving 54 investable assets across L1, L2, DeFi, Infrastructure, AI, DePIN, and Payments.</span>
+        </div>
+        <div class="overview-rule-card">
+          <strong>Why it matters</strong>
+          <span>The 54 kept assets are the ones scored by the factor model and eligible for the portfolio. The full 683 stays visible so the screening is transparent — you can see exactly what was considered and what was filtered out.</span>
+        </div>
+      </aside>
+    </div>
+  </div>
 </div>
 
 <!-- == DASHBOARD == -->
@@ -674,8 +740,10 @@ const assetMeta = {
 
 const categoryDescriptions = {
   "Exchanges / Tools":"an exchange, custody, wallet, or crypto tooling asset used around market access and operations.",
+  "Exchange":"an exchange, custody, wallet, or crypto tooling asset used around market access and operations.",
   "Base Layers":"a base-layer blockchain asset supporting settlement, consensus, or smart contract execution.",
   "Apps / Protocols":"an application or protocol asset used in decentralized finance and on-chain services.",
+  "DeFi":"an application or protocol asset used in decentralized finance and on-chain services.",
   "Scaling":"a scaling network or token that helps expand blockchain throughput and reduce transaction costs.",
   "Yield / Staking":"a staking, yield, or liquidity protocol asset used for productive on-chain exposure.",
   "Infrastructure":"an infrastructure asset supporting data, storage, compute, or middleware services.",
@@ -683,7 +751,8 @@ const categoryDescriptions = {
   "Stablecoins":"a stablecoin or stability-focused asset designed to track fiat value on-chain.",
   "Payments":"a payments-oriented crypto asset used for transfer, remittance, or settlement use cases.",
   "AI / Gaming":"an AI, gaming, metaverse, or consumer crypto asset tied to digital experiences and compute demand.",
-  "Meme / Culture":"a culture-driven token whose market value is strongly shaped by community and internet-native attention."
+  "Meme / Culture":"a culture-driven token whose market value is strongly shaped by community and internet-native attention.",
+  "Meme":"a culture-driven token whose market value is strongly shaped by community and internet-native attention."
 };
 
 const sectionDescriptions = {
@@ -724,10 +793,10 @@ const logoIds = {
   JUP:29210, RAY:8526, CAKE:7186, BAL:5728, SUSHI:6758, DYDX:11156, GMX:11857,
   "1INCH":8104, CVX:9903, FXS:6953, YFI:5864, LQTY:7429, ZRX:1896, KNC:1982,
   ONDO:21159, CFG:6748, SYRUP:9417, PAXG:4705, XAUT:5176, RSR:3964, POLYX:20362, CPOOL:12573, GFI:13967, TRU:7725,
-  USDT:825, USDC:3408, DAI:4943, USDE:29470, TUSD:2563, PYUSD:27772, FDUSD:26081, FRAX:6952, GHO:23508, USDS:33039, LUSD:9566, USDD:19891,
+  USDT:825, USDC:3408, DAI:4943, USDE:29470, TUSD:2563, PYUSD:27772, FDUSD:26081, FRAX:6952, GHO:23508, USDS:29378, LUSD:9566, USDD:19891,
   PYTH:28177, GRT:6719, ENS:13855, API3:7737, BAND:4679, UMA:5617, ANKR:3783,
   AR:5632, HNT:5665, AKT:7431, RNDR:5690, RENDER:5690, FET:3773, TAO:22974,
-  WLD:13502, VIRTUAL:3408, GALA:7080, SAND:6210, MANA:1966, AXS:6783, ILV:8719,
+  WLD:13502, VIRTUAL:28588, GALA:7080, SAND:6210, MANA:1966, AXS:6783, ILV:8719,
   CHZ:4066, GMT:18069, APE:18876, BLUR:23121, MAGIC:14783, PRIME:23711,
   PEPE:24478, SHIB:5994, BONK:23095, WIF:28752, FLOKI:10804, POPCAT:28782, BRETT:29743, MOG:27659, TURBO:24911, MEME:28301, BOME:29870,
   BGB:11092, OKB:3897, LEO:3957, KCS:2087, GT:4269, NEXO:2694, SAFE:21564,
@@ -1258,16 +1327,8 @@ render();
 </html>
 </template>
 
+<script src="overview_assets.js"></script>
 <script>
-let frameworkMapInited=false;
-function initFrameworkMap(){
-  const frame=document.getElementById('framework-map-frame');
-  if(!frame||frameworkMapInited)return;
-  const tpl=document.getElementById('framework-map-srcdoc');
-  frame.srcdoc=tpl?tpl.innerHTML.trim():'';
-  frameworkMapInited=true;
-}
-initFrameworkMap();
 </script>
 
 <script>
@@ -1286,13 +1347,13 @@ const SECTORS = {
 const DESCS={BTC:'Proof-of-work digital gold; the global crypto reserve asset with the highest liquidity and institutional adoption. A foundational benchmark for digital asset market structure.',ETH:'Programmable smart contract platform and foundation of DeFi, NFTs, and the L2 ecosystem. Transitioning to deflationary issuance via EIP-1559; ultrasound money thesis.',SOL:'High-throughput L1 optimized for speed and low fees. A thriving DeFi and consumer crypto ecosystem; primary competitor to Ethereum for developer and user activity.',XRP:'Enterprise-grade payments network focused on cross-border settlement with 100+ financial institution partnerships via RippleNet. SEC lawsuit resolution unlocked institutional re-engagement.',LINK:'The dominant oracle network providing verified real-world data to 1,000+ DeFi protocols across all major chains. Critical infrastructure with deep network-effect moats.',SUI:'Move-language L1 from ex-Meta engineers; object-centric data model designed for high parallelism and consumer-grade UX with sub-second finality.',AVAX:'L1 with customizable subnet architecture enabling chain-specific environments. Strong in institutional tokenization and gaming verticals; hosts major TradFi pilots.',LTC:'One of the earliest Bitcoin forks with 12+ years of proven uptime. Broad exchange and merchant adoption; simple payments use case without smart contract complexity.',CRO:'Native token of the Cronos EVM chain. Powers the Crypto.com ecosystem including exchange, card, and consumer DeFi products serving 80M+ users.',MNT:'Governance and gas token of Mantle Network, a modular Ethereum L2 backed by the former BitDAO treasury. Focus on gaming and institutional DeFi.',UNI:'Governance token of Uniswap, the leading DEX by cumulative volume. Near-monopoly in on-chain spot trading; V4 introduces custom liquidity hooks and fee structures.',ONDO:'Tokenized US Treasuries and money market funds on-chain. The leading RWA protocol bridging TradFi yield to DeFi; regulatory clarity a key catalyst.',SKY:'Governance of Sky (formerly MakerDAO), issuer of USDS/DAI — the oldest and most battle-tested decentralized stablecoin with $6B+ in circulation.',BGB:'Exchange token of Bitget, a top-5 global derivatives exchange. Revenue sharing, fee discounts, and ecosystem utility tied to platform growth.',AAVE:'Blue-chip lending protocol with $10B+ TVL across 12+ networks. Expanding with GHO stablecoin and cross-chain liquidity. The money market of DeFi.',WLD:'Iris-scan proof-of-personhood by Sam Altman. Building the world\'s largest verified human identity network on-chain; dual utility as AI-era identity layer.',RENDER:'Decentralized GPU rendering network connecting idle GPU owners with creators and AI workloads. Network effects strongest in 3D/VFX; pivoting into broader AI inference.',MORPHO:'Modular lending protocol built on top of Aave/Compound, improving rates for both borrowers and lenders via peer-to-peer matching. Composable credit infrastructure.',ATOM:'The "internet of blockchains" hub. IBC protocol enables sovereign blockchains to communicate; ATOM captures ecosystem fees and secures interchain security consumers.',ENA:'USDe — synthetic dollar backed by delta-neutral ETH derivatives. Ethena generates yield from funding rates and distributes it to stakers; sUSDe is the yield-bearing form.',QNT:'Overledger OS enabling interoperability between enterprise blockchains and legacy banking systems. Deep SWIFT partnership; positioned for regulated institutional blockchain adoption.',APT:'Move-language L1 from Aptos Labs (ex-Meta). Prioritizes safety and reliability for large-scale consumer applications; strong in Southeast Asia and gaming.',FIL:'Decentralized storage network incentivizing miners to offer verifiable, persistent data storage. Complementary to IPFS; growing use in AI data storage and archiving.',JUP:'The leading DEX aggregator on Solana, routing trades across all Solana DEXs for optimal execution. Also expanding into perps and a Solana-native stablecoin.',ARB:'Leading Ethereum optimistic rollup by TVL and activity. Rich DeFi ecosystem and Arbitrum Orbit framework enabling custom L3 chains. Strong sequencer revenue.',FET:'AI agent coordination network (ASI Alliance with OCEAN + AGIX). Enables autonomous AI agents to transact on-chain; largest AI-crypto merger to date.',VIRTUAL:'Infrastructure for creating and deploying autonomous AI agents on-chain. The leading agent launchpad on Base; AI-agent-as-a-product business model.',NIGHT:'Privacy-focused sidechain of Cardano enabling confidential DeFi and regulatory-compliant private transactions via ZK proofs.',SEI:'Purpose-built L1 optimized for trading with native order matching engine and parallelized execution. Targeting on-chain exchanges and high-frequency DeFi.',STX:'Bitcoin L2 enabling smart contracts and DeFi anchored to Bitcoin\'s security via the sBTC peg and Proof of Transfer consensus mechanism.',TIA:'Modular data availability layer. Rollups post transaction data to Celestia rather than Ethereum, significantly reducing costs. First modular DA blockchain in production.',CRV:'Governance token of Curve Finance, the dominant DEX for stablecoin and pegged-asset swaps. The "veCRV wars" make it central to DeFi liquidity routing.',ETHFI:'Liquid restaking protocol built on EigenLayer. Generates additional yield from native ETH staking by enabling restaked ETH; largest LRT by TVL.',IMX:'Ethereum L2 specialized for NFTs and gaming using StarkEx ZK proofs. Zero gas for NFT minting with Ethereum security; home to Gods Unchained and others.',PENDLE:'Interest rate derivatives protocol allowing users to separate and trade yield from principal. Pioneering on-chain yield tokenization; core infrastructure for LSD yield markets.',PYTH:'High-frequency oracle network publishing real-time price feeds from 90+ first-party providers including Binance, OKX, and Jump. Lower latency than Chainlink for DeFi.',GRT:'Decentralized indexing protocol for querying blockchain data via GraphQL. Critical Web3 infrastructure described as "Google for blockchains"; core infra for dApp development.',GNO:'Governance token of the Gnosis ecosystem: Gnosis Chain (formerly xDAI), Safe multisig, and Gnosis Pay Visa debit card for real-world spending.',LDO:'Governance of Lido, the largest liquid staking protocol managing $20B+ in stETH and ~30% of all staked ETH. Beneficiary of restaking narrative via EigenLayer.',ZBCN:'Payments and streaming protocol on Solana enabling per-second salary payments, subscriptions, and real-time institutional treasury management.',OP:'Governance token of the Optimism Superchain. Sequencer fee revenue funds RetroPGF grants and ecosystem public goods. Base, Zora, and others use OP Stack.',STRK:'Governance and gas token of StarkNet, Ethereum\'s ZK-rollup using STARK proofs for computational integrity at scale. Fastest-growing zkEVM ecosystem.',JTO:'Governance of Jito Labs, the largest MEV-aware liquid staking protocol on Solana. JitoSOL captures MEV (block tips) revenue for stakers in addition to base yield.',ENS:'Ethereum Name Service — decentralized naming for wallets, websites, and on-chain identity. The standard for human-readable crypto addresses; ~3M registered names.',SYRUP:'Governance of Maple Finance, an institutional credit marketplace offering undercollateralized on-chain loans to vetted institutions. Bridges TradFi credit to DeFi.',POL:'Governance of the AggLayer, Polygon\'s ZK interoperability framework unifying L2s with shared liquidity. Former MATIC; rebranded for the ZK-centric modular future.',RAY:'Governance of Raydium, the leading AMM and concentrated liquidity DEX on Solana. Captures fees from the majority of Solana DeFi trading volume.',CHZ:'Fan token infrastructure for 150+ professional sports clubs globally. Socios.com enables voting rights and exclusive fan engagement via on-chain tokens.',SAND:'Governance token of The Sandbox metaverse platform. 200+ brand partnerships including Adidas, HSBC, and Warner Music. Virtual real estate and user-generated content.',AXS:'Governance of Axie Infinity, the pioneering play-to-earn NFT game. Ronin sidechain processes gaming transactions at near-zero cost; rebuilding after a 2021-era peak.'};
 const TV={BTC:'BINANCE:BTCUSDT',ETH:'BINANCE:ETHUSDT',SOL:'BINANCE:SOLUSDT',XRP:'BINANCE:XRPUSDT',LINK:'BINANCE:LINKUSDT',SUI:'BINANCE:SUIUSDT',AVAX:'BINANCE:AVAXUSDT',LTC:'BINANCE:LTCUSDT',CRO:'BINANCE:CROUSDT',MNT:'BYBIT:MNTUSDT',UNI:'BINANCE:UNIUSDT',ONDO:'BINANCE:ONDOUSDT',SKY:'COINBASE:SKYUSD',BGB:'BITGET:BGBUSDT',AAVE:'BINANCE:AAVEUSDT',WLD:'BINANCE:WLDUSDT',MORPHO:'COINBASE:MORPHOUSD',ATOM:'BINANCE:ATOMUSDT',RENDER:'BINANCE:RENDERUSDT',ENA:'BINANCE:ENAUSDT',QNT:'BINANCE:QNTUSDT',APT:'BINANCE:APTUSDT',FIL:'BINANCE:FILUSDT',JUP:'BINANCE:JUPUSDT',ARB:'BINANCE:ARBUSDT',FET:'BINANCE:FETUSDT',VIRTUAL:'BINANCE:VIRTUALUSDT',NIGHT:'BINANCE:NIGHTUSDT',SEI:'BINANCE:SEIUSDT',STX:'BINANCE:STXUSDT',TIA:'BINANCE:TIAUSDT',CRV:'BINANCE:CRVUSDT',ETHFI:'BINANCE:ETHFIUSDT',IMX:'BINANCE:IMXUSDT',PENDLE:'BINANCE:PENDLEUSDT',PYTH:'BINANCE:PYTHUSDT',GRT:'BINANCE:GRTUSDT',GNO:'KRAKEN:GNOUSD',LDO:'BINANCE:LDOUSDT',ZBCN:'BYBIT:ZBCNUSDT',OP:'BINANCE:OPUSDT',STRK:'BINANCE:STRKUSDT',JTO:'BINANCE:JTOUSDT',ENS:'BINANCE:ENSUSDT',SYRUP:'BINANCE:SYRUPUSDT',POL:'BINANCE:POLUSDT',RAY:'BINANCE:RAYUSDT',CHZ:'BINANCE:CHZUSDT',SAND:'BINANCE:SANDUSDT',AXS:'BINANCE:AXSUSDT'};
 const DATA=[
-  {t:'BTC',n:'Bitcoin',              s:'L1 Platforms',         m:1330000000000,p:'$64,197'},
-  {t:'ETH',n:'Ethereum',             s:'L1 Platforms',         m:208000000000, p:'$1,733'},
-  {t:'XRP',n:'Ripple',               s:'Payments & Settlement',m:71170000000,  p:'$1.16'},
-  {t:'SOL',n:'Solana',               s:'L1 Platforms',         m:42260000000,  p:'$72.81'},
-  {t:'LINK',n:'Chainlink',           s:'Oracles & Data',       m:6000000000,   p:'$8.02'},
+  {t:'BTC',n:'Bitcoin',              s:'L1 Platforms',         m:1560000000000,p:'$77,651'},
+  {t:'ETH',n:'Ethereum',             s:'L1 Platforms',         m:257570000000, p:'$2,134'},
+  {t:'XRP',n:'Ripple',               s:'Payments & Settlement',m:84030000000,  p:'$1.36'},
+  {t:'SOL',n:'Solana',               s:'L1 Platforms',         m:49530000000,  p:'$85.66'},
+  {t:'LINK',n:'Chainlink',           s:'Oracles & Data',       m:7000000000,   p:'$9.63'},
   {t:'SUI',n:'Sui',                  s:'L1 Platforms',         m:4210000000,   p:'$1.05'},
-  {t:'AVAX',n:'Avalanche',           s:'L1 Platforms',         m:2760000000,   p:'$6.37'},
+  {t:'AVAX',n:'Avalanche',           s:'L1 Platforms',         m:4080000000,   p:'$9.44'},
   {t:'LTC',n:'Litecoin',             s:'Payments & Settlement',m:4080000000,   p:'$52.87'},
   {t:'CRO',n:'Cronos',               s:'L1 Platforms',         m:3070000000,   p:'$0.0684'},
   {t:'MNT',n:'Mantle',               s:'L1 Platforms',         m:2140000000,   p:'$0.6468'},
@@ -1386,11 +1447,11 @@ const SPARKLINES={
   LINK:[100,101,102,101,100,101,102,103,104,103,102,101,100,101,102,103,104,105,106,107],
 };
 const TICKER_ASSETS=[
-  {t:'BTC', pct:'+4.2%',pos:true},
-  {t:'ETH', pct:'-0.6%',pos:false},
-  {t:'SOL', pct:'-2.2%',pos:false},
-  {t:'XRP', pct:'+1.2%',pos:true},
-  {t:'LINK',pct:'+0.8%',pos:true},
+  {t:'BTC', pct:'+2.1%',pos:true},
+  {t:'ETH', pct:'-0.8%',pos:false},
+  {t:'SOL', pct:'-1.5%',pos:false},
+  {t:'XRP', pct:'+1.3%',pos:true},
+  {t:'LINK',pct:'+0.6%',pos:true},
 ];
 
 /* ── UTILS ── */
@@ -1447,9 +1508,143 @@ function switchTab(id,btn){
   document.getElementById('pane-'+id).classList.add('active');
   if(!btn)btn=document.querySelector(`.tab-btn[data-tab="${id}"]`);
   if(btn)btn.classList.add('active');
-  if(id==='overview')initFrameworkMap();
+  if(id==='overview')initAnchorageOverview();
   if(id==='dashboard')initOverview();
   if(id==='sectors')initSectors();
+}
+
+let anchorOverviewReady=false;
+let overviewFilterOn=false;
+let overviewSelectedAsset=null;
+
+function initAnchorageOverview(){
+  if(anchorOverviewReady) return;
+  anchorOverviewReady=true;
+  const toggle=document.getElementById('overview-filter-toggle');
+  const status=document.getElementById('overview-filter-status');
+  if(toggle){
+    toggle.addEventListener('click',()=>{
+      overviewFilterOn=!overviewFilterOn;
+      toggle.classList.toggle('active',overviewFilterOn);
+      toggle.setAttribute('aria-pressed',overviewFilterOn?'true':'false');
+      toggle.textContent=overviewFilterOn?'Show full 683':'Show 54 kept';
+      renderAnchorageOverview();
+    });
+  }
+  // defer one frame so the card has real width/height before layout
+  requestAnimationFrame(()=>renderAnchorageOverview());
+}
+
+function getOverviewAssets(){
+  if(overviewFilterOn) return Array.isArray(OVERVIEW_KEPT)?OVERVIEW_KEPT:[];
+  return Array.isArray(OVERVIEW_ASSETS)?OVERVIEW_ASSETS:[];
+}
+
+const SECTOR_LABELS={L1:'L1 Platforms',L2:'L2 Rollups',DeFi:'DeFi',DePIN:'DePIN',
+  Infrastructure:'Infrastructure',AI:'AI',Payments:'Payments',Stablecoin:'Stablecoin',
+  Gaming:'Gaming',Meme:'Meme',RWA:'RWA',NFT:'NFT',Other:'Other'};
+const SECTOR_PALETTE={L1:'#3861fb',L2:'#7c3aed',DeFi:'#16a34a',DePIN:'#0ea5e9',
+  Infrastructure:'#64748b',AI:'#d946ef',Payments:'#0f766e',Stablecoin:'#f59e0b',
+  Gaming:'#ef4444',Meme:'#f97316',RWA:'#d97706',NFT:'#8b5cf6',Other:'#94a3b8',
+  'L1 Platforms':'#3861fb','L2 Rollups':'#7c3aed'};
+const SECTOR_ORDER=['L1','L2','DeFi','Infrastructure','AI','DePIN','Payments','RWA','Stablecoin','Gaming','Meme','NFT','Other'];
+function sectorColor(sector){return SECTOR_PALETTE[sector]||'#64748b';}
+function fmtCap(v){if(!v)return'—';if(v>=1e12)return'$'+(v/1e12).toFixed(2)+'T';if(v>=1e9)return'$'+(v/1e9).toFixed(2)+'B';if(v>=1e6)return'$'+(v/1e6).toFixed(0)+'M';return'$'+v.toLocaleString();}
+
+function renderAnchorageOverview(){
+  const container=document.getElementById('overview-bubbles');
+  const status=document.getElementById('overview-filter-status');
+  const panel=document.getElementById('overview-rules-panel');
+  if(!container)return;
+  const fullN=(typeof OVERVIEW_ASSETS!=='undefined'?OVERVIEW_ASSETS:[]).length;
+  const keptN=(typeof OVERVIEW_KEPT!=='undefined'?OVERVIEW_KEPT:[]).length;
+  const assets=getOverviewAssets().slice().sort((a,b)=>(b.marketCap||0)-(a.marketCap||0));
+  if(status){status.textContent=overviewFilterOn?`Filtered view · ${keptN} kept assets`:`Full universe · ${fullN} assets`;}
+
+  container.innerHTML='';
+  const W=container.clientWidth||760, H=container.clientHeight||520;
+  const cx=W/2, cy=H/2, n=assets.length||1;
+  const maxC=Math.max(1,...assets.map(a=>a.marketCap||0));
+  const lnMax=Math.log10(maxC+1)||1;
+  const cfg=overviewFilterOn?{floor:36,span:64,pad:3,fill:0.40}:{floor:10.5,span:42,pad:1.4,fill:0.5};
+  const sizeFor=c=>c?cfg.floor+Math.pow(Math.log10(c+1)/lnMax,1.35)*cfg.span:cfg.floor;
+  // golden-angle spiral seed: largest near the centre
+  const GA=Math.PI*(3-Math.sqrt(5));
+  const nodes=assets.map((a,i)=>{
+    const t=Math.sqrt(i/n), ang=i*GA;
+    // tiny deterministic jitter on floor-sized (unknown-cap) bubbles so the long tail
+    // reads as an organic band rather than a hard ring
+    const jit=a.marketCap?0:(((i*1373)%100)/100*3-1.5);
+    return {a,x:cx+Math.cos(ang)*t*W*cfg.fill,y:cy+Math.sin(ang)*t*H*cfg.fill,r:sizeFor(a.marketCap)/2+jit};
+  });
+  // relax: separate overlapping bubbles, keep inside the ellipse
+  const passes=overviewFilterOn?70:30, ex=W/2-6, ey=H/2-6;
+  for(let p=0;p<passes;p++){
+    for(let i=0;i<n;i++){
+      const A=nodes[i];
+      for(let j=i+1;j<n;j++){
+        const B=nodes[j];
+        let dx=B.x-A.x, dy=B.y-A.y, d=Math.sqrt(dx*dx+dy*dy)||0.01, min=A.r+B.r+cfg.pad;
+        if(d<min){const k=(min-d)/d*0.5; dx*=k; dy*=k; A.x-=dx; A.y-=dy; B.x+=dx; B.y+=dy;}
+      }
+    }
+    for(const nd of nodes){
+      const nx=(nd.x-cx)/ex, ny=(nd.y-cy)/ey, rr=Math.hypot(nx,ny);
+      if(rr>1){nd.x=cx+nx/rr*ex; nd.y=cy+ny/rr*ey;}
+    }
+  }
+  // paint
+  nodes.forEach(nd=>{
+    const a=nd.a, size=nd.r*2, color=sectorColor(a.sector);
+    const b=document.createElement('button');
+    b.type='button'; b.className='overview-bubble';
+    b.style.left=`${nd.x.toFixed(1)}px`; b.style.top=`${nd.y.toFixed(1)}px`;
+    b.style.width=`${size.toFixed(1)}px`; b.style.height=`${size.toFixed(1)}px`;
+    b.style.background=`radial-gradient(circle at 32% 28%, ${color}, ${color}D0)`;
+    b.style.opacity='0';
+    if(size>=20) b.innerHTML=`<span>${a.ticker.slice(0,4)}</span>`;
+    b.title=`${a.name} · ${SECTOR_LABELS[a.sector]||a.sector}${a.marketCap?' · '+fmtCap(a.marketCap):''}`;
+    const show=()=>updateOverviewRule(a);
+    b.addEventListener('mouseenter',show);
+    b.addEventListener('focus',show);
+    b.addEventListener('click',show);
+    container.appendChild(b);
+    requestAnimationFrame(()=>{b.style.opacity=overviewFilterOn?'1':(a.marketCap?'1':'0.82');});
+  });
+  renderOverviewLegend(assets);
+  updateOverviewRule(null);
+  if(panel) panel.classList.toggle('is-collapsed',!overviewFilterOn);
+}
+
+function renderOverviewLegend(assets){
+  const el=document.getElementById('overview-legend');
+  if(!el)return;
+  const counts={};
+  assets.forEach(a=>{counts[a.sector]=(counts[a.sector]||0)+1;});
+  el.innerHTML=SECTOR_ORDER.filter(s=>counts[s]).map(s=>
+    `<span class="ov-leg"><i style="background:${sectorColor(s)}"></i>${SECTOR_LABELS[s]||s} <b>${counts[s]}</b></span>`
+  ).join('');
+}
+
+function updateOverviewRule(asset){
+  const title=document.getElementById('overview-rule-title');
+  const body=document.getElementById('overview-rule-body');
+  if(!title||!body)return;
+  if(!asset){
+    title.textContent=overviewFilterOn?'The 54 kept assets':'From 683 to 54';
+    body.innerHTML=overviewFilterOn
+      ? 'These 54 assets pass every screening rule and are the universe scored by the factor model. Hover any bubble for its sector, market cap, and role.'
+      : 'Hover any bubble for its sector, market cap, and role. Toggle <strong>Show 54 kept</strong> to narrow the map to the investable subset.';
+    return;
+  }
+  overviewSelectedAsset=asset;
+  const color=sectorColor(asset.sector);
+  const keptBadge=asset.kept?`<span class="ov-badge ov-kept">✓ Kept (in the 54)</span>`:`<span class="ov-badge ov-out">Filtered out</span>`;
+  title.textContent=`${asset.name} · ${asset.ticker}`;
+  body.innerHTML=`<div class="ov-rule-meta">`
+    +`<span class="ov-sector" style="background:${color}1a;color:${color}"><i style="background:${color}"></i>${SECTOR_LABELS[asset.sector]||asset.sector}</span>`
+    +`<span class="ov-mc">${fmtCap(asset.marketCap)}</span>${keptBadge}</div>`
+    +`<div class="ov-summary">${asset.summary||''}</div>`;
 }
 
 /* ============== DASHBOARD ============== */
@@ -1851,7 +2046,9 @@ function openAsset(ticker){
   window.scrollTo({top:0,behavior:'smooth'});
 }
 
-initFrameworkMap();
+/* Overview is the default-active pane — initialise it on load (not only on tab click). */
+if(document.readyState!=='loading'){initAnchorageOverview();}
+else{document.addEventListener('DOMContentLoaded',initAnchorageOverview);}
 </script>
 </body>
 </html>

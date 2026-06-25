@@ -57,7 +57,19 @@ html{zoom:1.25}
 .overview-rule-card{background:#f8fafc;border:1px solid #eef2f6;border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:8px}
 .overview-rule-card strong{font-size:12px;color:#0d1421}
 .overview-rule-card span{font-size:11px;color:#64748b;line-height:1.5}
-.overview-status{font-size:11px;color:#64748b}
+.overview-status{font-size:11px;color:#64748b;font-weight:700}
+.overview-legend{display:flex;flex-wrap:wrap;gap:6px 13px;margin-top:10px}
+.ov-leg{display:inline-flex;align-items:center;gap:5px;font-size:10px;font-weight:600;color:#5f6b7c}
+.ov-leg i{width:9px;height:9px;border-radius:3px;display:inline-block;flex:0 0 auto}
+.ov-leg b{color:#0d1421;font-weight:800}
+.ov-rule-meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.ov-sector{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:999px;font-size:11px;font-weight:800}
+.ov-sector i{width:7px;height:7px;border-radius:50%}
+.ov-mc{font-size:13px;font-weight:800;color:#0d1421}
+.ov-badge{font-size:10px;font-weight:800;padding:3px 9px;border-radius:999px;white-space:nowrap}
+.ov-kept{background:#e7f7ee;color:#0f9d58}
+.ov-out{background:#f1f3f7;color:#8a96aa}
+.ov-summary{font-size:12px;color:#4b5563;line-height:1.62}
 @keyframes overviewFadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 
 /* ── Asset ticker strip ── */
@@ -270,27 +282,28 @@ table.at tbody tr:last-child td{border-bottom:none}
     <div class="overview-head">
       <div class="overview-copy">
         <div class="overview-eyebrow">Supported by Anchorage</div>
-        <h1>Advisor Curated</h1>
-        <p>Anchorage-supported assets are presented as an English-first bubble universe with a cleaner, CMC-inspired visual language and a rules-driven filtering view.</p>
+        <h1>Anchorage Universe</h1>
+        <p>The full Anchorage-supported universe — <strong>683 assets</strong> classified across 13 sectors — shown as a market-cap-weighted bubble map. Toggle the filter to narrow to the <strong>54 kept</strong> assets that pass the selection rules and feed the factor model.</p>
       </div>
-      <button class="overview-toggle" id="overview-filter-toggle" type="button" aria-pressed="false">Filter assets</button>
+      <button class="overview-toggle" id="overview-filter-toggle" type="button" aria-pressed="false">Show 54 kept</button>
     </div>
     <div class="overview-body">
       <div class="overview-bubble-card">
-        <div class="overview-status" id="overview-filter-status">Full universe view · 60 assets</div>
+        <div class="overview-status" id="overview-filter-status">Full universe · 683 assets</div>
         <div class="overview-bubbles" id="overview-bubbles"></div>
+        <div class="overview-legend" id="overview-legend"></div>
       </div>
       <aside class="overview-rules-panel is-collapsed" id="overview-rules-panel">
         <div class="overview-rule-pill">Selection rules</div>
-        <h3 id="overview-rule-title">How the filter works</h3>
-        <p class="rules-copy" id="overview-rule-body">The filter narrows the bubble universe to a more focused set of Anchorage-supported assets. When enabled, only the highest-priority sectors remain visible so the overview preserves the bubble format while reducing visual noise.</p>
+        <h3 id="overview-rule-title">From 683 to 54</h3>
+        <p class="rules-copy" id="overview-rule-body">Hover any bubble for its sector, market cap, and role. The full universe is every Anchorage-supported asset; the filter keeps only the assets that survive the screening rules below.</p>
         <div class="overview-rule-card">
-          <strong>Rule logic</strong>
-          <span>Stablecoin, RWA, and Meme assets are treated as distinct categories first. The remaining universe is then grouped by L1, L2, DeFi, infrastructure, payments, gaming, AI, and other function-led sectors.</span>
+          <strong>How the 54 are kept</strong>
+          <span>Start from 683 Anchorage-supported assets. Drop derivatives and wrapped/staked variants, then merge multi-chain duplicates into one ticker (e.g. ETH on Arbitrum / Linea fold into ETH). Stablecoins, meme, NFT, gaming, and RWA pure-plays are set aside, leaving 54 investable assets across L1, L2, DeFi, Infrastructure, AI, DePIN, and Payments.</span>
         </div>
         <div class="overview-rule-card">
-          <strong>Why this matters</strong>
-          <span>It keeps the screen readable, makes the sector logic easier to follow, and preserves the original bubble-style storytelling for the overview.</span>
+          <strong>Why it matters</strong>
+          <span>The 54 kept assets are the ones scored by the factor model and eligible for the portfolio. The full 683 stays visible so the screening is transparent — you can see exactly what was considered and what was filtered out.</span>
         </div>
       </aside>
     </div>
@@ -1514,85 +1527,103 @@ function initAnchorageOverview(){
       overviewFilterOn=!overviewFilterOn;
       toggle.classList.toggle('active',overviewFilterOn);
       toggle.setAttribute('aria-pressed',overviewFilterOn?'true':'false');
-      status.textContent=overviewFilterOn?'Filtered view · curated subset':'Full universe view · 60 assets';
+      toggle.textContent=overviewFilterOn?'Show full 683':'Show 54 kept';
       renderAnchorageOverview();
     });
   }
-  renderAnchorageOverview();
+  // defer one frame so the card has real width/height before layout
+  requestAnimationFrame(()=>renderAnchorageOverview());
 }
 
 function getOverviewAssets(){
-  const base=Array.isArray(OVERVIEW_ASSETS)?OVERVIEW_ASSETS:[];
-  if(!overviewFilterOn){
-    return base;
-  }
-  const focusSectors=['L1 Platforms','DeFi','Infrastructure','Payments','AI','L2 Rollups','Stablecoin'];
-  return base.filter(asset=>focusSectors.includes(asset.sector) && asset.sector!=='Other').slice(0,18);
+  if(overviewFilterOn) return Array.isArray(OVERVIEW_KEPT)?OVERVIEW_KEPT:[];
+  return Array.isArray(OVERVIEW_ASSETS)?OVERVIEW_ASSETS:[];
 }
 
-function sectorColor(sector){
-  const palette={
-    'L1 Platforms':'#3861fb',
-    'L2 Rollups':'#7c3aed',
-    DeFi:'#16a34a',
-    Infrastructure:'#64748b',
-    AI:'#d946ef',
-    Payments:'#0f766e',
-    Stablecoin:'#f59e0b',
-    Gaming:'#ef4444',
-    Meme:'#f97316',
-    RWA:'#d97706',
-    NFT:'#8b5cf6',
-    Other:'#94a3b8'
-  };
-  return palette[sector]||'#64748b';
-}
+const SECTOR_LABELS={L1:'L1 Platforms',L2:'L2 Rollups',DeFi:'DeFi',DePIN:'DePIN',
+  Infrastructure:'Infrastructure',AI:'AI',Payments:'Payments',Stablecoin:'Stablecoin',
+  Gaming:'Gaming',Meme:'Meme',RWA:'RWA',NFT:'NFT',Other:'Other'};
+const SECTOR_PALETTE={L1:'#3861fb',L2:'#7c3aed',DeFi:'#16a34a',DePIN:'#0ea5e9',
+  Infrastructure:'#64748b',AI:'#d946ef',Payments:'#0f766e',Stablecoin:'#f59e0b',
+  Gaming:'#ef4444',Meme:'#f97316',RWA:'#d97706',NFT:'#8b5cf6',Other:'#94a3b8',
+  'L1 Platforms':'#3861fb','L2 Rollups':'#7c3aed'};
+const SECTOR_ORDER=['L1','L2','DeFi','Infrastructure','AI','DePIN','Payments','RWA','Stablecoin','Gaming','Meme','NFT','Other'];
+function sectorColor(sector){return SECTOR_PALETTE[sector]||'#64748b';}
+function fmtCap(v){if(!v)return'—';if(v>=1e12)return'$'+(v/1e12).toFixed(2)+'T';if(v>=1e9)return'$'+(v/1e9).toFixed(2)+'B';if(v>=1e6)return'$'+(v/1e6).toFixed(0)+'M';return'$'+v.toLocaleString();}
 
 function renderAnchorageOverview(){
   const container=document.getElementById('overview-bubbles');
   const status=document.getElementById('overview-filter-status');
   const panel=document.getElementById('overview-rules-panel');
-  const title=document.getElementById('overview-rule-title');
-  const body=document.getElementById('overview-rule-body');
   if(!container)return;
-  const assets=getOverviewAssets();
-  if(status){status.textContent=overviewFilterOn?`Filtered view · ${assets.length} assets`:`Full universe view · ${assets.length} assets`;}
+  const fullN=(typeof OVERVIEW_ASSETS!=='undefined'?OVERVIEW_ASSETS:[]).length;
+  const keptN=(typeof OVERVIEW_KEPT!=='undefined'?OVERVIEW_KEPT:[]).length;
+  const assets=getOverviewAssets().slice().sort((a,b)=>(b.marketCap||0)-(a.marketCap||0));
+  if(status){status.textContent=overviewFilterOn?`Filtered view · ${keptN} kept assets`:`Full universe · ${fullN} assets`;}
+
   container.innerHTML='';
-  const width=container.clientWidth||720;
-  const height=container.clientHeight||520;
-  const centerX=width/2;
-  const centerY=height/2;
-  assets.forEach((asset,index)=>{
-    const bubble=document.createElement('button');
-    bubble.type='button';
-    bubble.className='overview-bubble';
-    const size=Math.max(42,Math.min(90,44+Math.log10((asset.marketCap||1)+1)*16));
-    const radius=Math.min(width,height)*0.28 + (index%6)*18;
-    const angle=(index/assets.length)*Math.PI*2;
-    const x=centerX + Math.cos(angle)*radius;
-    const y=centerY + Math.sin(angle)*radius*0.66 + ((index%3)-1)*16;
-    const color=sectorColor(asset.sector);
-    bubble.style.left=`${x}px`;
-    bubble.style.top=`${y}px`;
-    bubble.style.width=`${size}px`;
-    bubble.style.height=`${size}px`;
-    bubble.style.background=`linear-gradient(135deg, ${color}, ${color}BB)`;
-    bubble.style.opacity='0';
-    bubble.style.transform='translate(-50%,-50%) translateX(18px)';
-    bubble.innerHTML=`<span>${asset.ticker.slice(0,3)}</span>`;
-    bubble.title=`${asset.name} · ${asset.sector}`;
-    bubble.addEventListener('mouseenter',()=>updateOverviewRule(asset));
-    bubble.addEventListener('focus',()=>updateOverviewRule(asset));
-    bubble.addEventListener('click',()=>updateOverviewRule(asset));
-    container.appendChild(bubble);
-    requestAnimationFrame(()=>{
-      bubble.style.opacity='1';
-      bubble.style.transform='translate(-50%,-50%)';
-    });
+  const W=container.clientWidth||760, H=container.clientHeight||520;
+  const cx=W/2, cy=H/2, n=assets.length||1;
+  const maxC=Math.max(1,...assets.map(a=>a.marketCap||0));
+  const lnMax=Math.log10(maxC+1)||1;
+  const cfg=overviewFilterOn?{floor:36,span:64,pad:3,fill:0.40}:{floor:10.5,span:42,pad:1.4,fill:0.5};
+  const sizeFor=c=>c?cfg.floor+Math.pow(Math.log10(c+1)/lnMax,1.35)*cfg.span:cfg.floor;
+  // golden-angle spiral seed: largest near the centre
+  const GA=Math.PI*(3-Math.sqrt(5));
+  const nodes=assets.map((a,i)=>{
+    const t=Math.sqrt(i/n), ang=i*GA;
+    // tiny deterministic jitter on floor-sized (unknown-cap) bubbles so the long tail
+    // reads as an organic band rather than a hard ring
+    const jit=a.marketCap?0:(((i*1373)%100)/100*3-1.5);
+    return {a,x:cx+Math.cos(ang)*t*W*cfg.fill,y:cy+Math.sin(ang)*t*H*cfg.fill,r:sizeFor(a.marketCap)/2+jit};
   });
-  if(!overviewSelectedAsset && assets[0]){overviewSelectedAsset=assets[0];}
-  updateOverviewRule(overviewSelectedAsset||null);
-  panel.classList.toggle('is-collapsed',!overviewFilterOn);
+  // relax: separate overlapping bubbles, keep inside the ellipse
+  const passes=overviewFilterOn?70:30, ex=W/2-6, ey=H/2-6;
+  for(let p=0;p<passes;p++){
+    for(let i=0;i<n;i++){
+      const A=nodes[i];
+      for(let j=i+1;j<n;j++){
+        const B=nodes[j];
+        let dx=B.x-A.x, dy=B.y-A.y, d=Math.sqrt(dx*dx+dy*dy)||0.01, min=A.r+B.r+cfg.pad;
+        if(d<min){const k=(min-d)/d*0.5; dx*=k; dy*=k; A.x-=dx; A.y-=dy; B.x+=dx; B.y+=dy;}
+      }
+    }
+    for(const nd of nodes){
+      const nx=(nd.x-cx)/ex, ny=(nd.y-cy)/ey, rr=Math.hypot(nx,ny);
+      if(rr>1){nd.x=cx+nx/rr*ex; nd.y=cy+ny/rr*ey;}
+    }
+  }
+  // paint
+  nodes.forEach(nd=>{
+    const a=nd.a, size=nd.r*2, color=sectorColor(a.sector);
+    const b=document.createElement('button');
+    b.type='button'; b.className='overview-bubble';
+    b.style.left=`${nd.x.toFixed(1)}px`; b.style.top=`${nd.y.toFixed(1)}px`;
+    b.style.width=`${size.toFixed(1)}px`; b.style.height=`${size.toFixed(1)}px`;
+    b.style.background=`radial-gradient(circle at 32% 28%, ${color}, ${color}D0)`;
+    b.style.opacity='0';
+    if(size>=20) b.innerHTML=`<span>${a.ticker.slice(0,4)}</span>`;
+    b.title=`${a.name} · ${SECTOR_LABELS[a.sector]||a.sector}${a.marketCap?' · '+fmtCap(a.marketCap):''}`;
+    const show=()=>updateOverviewRule(a);
+    b.addEventListener('mouseenter',show);
+    b.addEventListener('focus',show);
+    b.addEventListener('click',show);
+    container.appendChild(b);
+    requestAnimationFrame(()=>{b.style.opacity=overviewFilterOn?'1':(a.marketCap?'1':'0.82');});
+  });
+  renderOverviewLegend(assets);
+  updateOverviewRule(null);
+  if(panel) panel.classList.toggle('is-collapsed',!overviewFilterOn);
+}
+
+function renderOverviewLegend(assets){
+  const el=document.getElementById('overview-legend');
+  if(!el)return;
+  const counts={};
+  assets.forEach(a=>{counts[a.sector]=(counts[a.sector]||0)+1;});
+  el.innerHTML=SECTOR_ORDER.filter(s=>counts[s]).map(s=>
+    `<span class="ov-leg"><i style="background:${sectorColor(s)}"></i>${SECTOR_LABELS[s]||s} <b>${counts[s]}</b></span>`
+  ).join('');
 }
 
 function updateOverviewRule(asset){
@@ -1600,13 +1631,20 @@ function updateOverviewRule(asset){
   const body=document.getElementById('overview-rule-body');
   if(!title||!body)return;
   if(!asset){
-    title.textContent='How the filter works';
-    body.innerHTML='The filter narrows the bubble universe to a more focused set of Anchorage-supported assets. When enabled, only the highest-priority sectors remain visible so the overview preserves the bubble format while reducing visual noise.';
+    title.textContent=overviewFilterOn?'The 54 kept assets':'From 683 to 54';
+    body.innerHTML=overviewFilterOn
+      ? 'These 54 assets pass every screening rule and are the universe scored by the factor model. Hover any bubble for its sector, market cap, and role.'
+      : 'Hover any bubble for its sector, market cap, and role. Toggle <strong>Show 54 kept</strong> to narrow the map to the investable subset.';
     return;
   }
   overviewSelectedAsset=asset;
-  title.textContent=asset.name;
-  body.innerHTML=`<strong>${asset.sector}</strong><br>${asset.summary}`;
+  const color=sectorColor(asset.sector);
+  const keptBadge=asset.kept?`<span class="ov-badge ov-kept">✓ Kept (in the 54)</span>`:`<span class="ov-badge ov-out">Filtered out</span>`;
+  title.textContent=`${asset.name} · ${asset.ticker}`;
+  body.innerHTML=`<div class="ov-rule-meta">`
+    +`<span class="ov-sector" style="background:${color}1a;color:${color}"><i style="background:${color}"></i>${SECTOR_LABELS[asset.sector]||asset.sector}</span>`
+    +`<span class="ov-mc">${fmtCap(asset.marketCap)}</span>${keptBadge}</div>`
+    +`<div class="ov-summary">${asset.summary||''}</div>`;
 }
 
 /* ============== DASHBOARD ============== */
@@ -2007,6 +2045,10 @@ function openAsset(ticker){
   loadTV(()=>renderTV(ticker,tvInterval,'tv-asset'));
   window.scrollTo({top:0,behavior:'smooth'});
 }
+
+/* Overview is the default-active pane — initialise it on load (not only on tab click). */
+if(document.readyState!=='loading'){initAnchorageOverview();}
+else{document.addEventListener('DOMContentLoaded',initAnchorageOverview);}
 </script>
 </body>
 </html>
