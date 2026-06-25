@@ -1626,29 +1626,42 @@ function renderAnchorageOverview(){
   }
 
   const LOGO=id=>`https://s2.coinmarketcap.com/static/img/coins/64x64/${id}.png`;
-  // build bubbles
+  const RING=overviewFilterOn?'4.5px':'3px';
+  // build bare bubbles — logo vs category-colour disc is decided later by level-of-detail
   nodes.forEach(nd=>{
-    const a=nd.a, size=nd.r*2, color=sectorColor(a.sector);
+    const a=nd.a, size=nd.r*2;
     const b=document.createElement('button');
     b.type='button'; b.className='overview-bubble'; b._node=nd;
     b.style.width=`${size.toFixed(1)}px`; b.style.height=`${size.toFixed(1)}px`;
-    b.style.borderColor=color; b.style.opacity='0';
-    if(a.logo){
-      b.style.borderWidth=overviewFilterOn?'4.5px':'3px';   // 54 ring x1.5
-      const img=document.createElement('img');
-      img.src=LOGO(a.logo); img.alt=a.ticker; img.loading='lazy'; img.draggable=false;
-      img.addEventListener('error',()=>{b.classList.add('ov-nologo');b.style.background=`radial-gradient(circle at 32% 28%, ${color}, ${color}D0)`;img.remove();});
-      b.appendChild(img); nd._img=img;
-    } else {
-      b.classList.add('ov-nologo');
-      b.style.background=`radial-gradient(circle at 32% 28%, ${color}, ${color}D0)`;
-    }
+    b.style.opacity='0';
     b.title=`${a.name} · ${SECTOR_LABELS[a.sector]||a.sector}${a.marketCap?' · '+fmtCap(a.marketCap):''}`;
     b.addEventListener('mouseenter',()=>{if(!mode)updateOverviewRule(a);});
     b.addEventListener('focus',()=>updateOverviewRule(a));
-    nd.el=b; stage.appendChild(b);
+    nd.el=b; nd._st=undefined; nd._img=null; nd._broken=!a.logo;
+    stage.appendChild(b);
     requestAnimationFrame(()=>{b.style.opacity='1';});
   });
+  // Set a node's visual state: 'logo' (white disc + ring + icon), 'disc' (solid category colour),
+  // or 'hidden' (culled off-screen, icon unloaded to save memory).
+  function applyState(nd,want){
+    if(want===nd._st) return; nd._st=want;
+    const b=nd.el, color=sectorColor(nd.a.sector);
+    if(want==='hidden'){ b.style.display='none'; if(nd._img){nd._img.style.display='none'; nd._img.removeAttribute('src');} return; }
+    b.style.display='';
+    if(want==='logo'){
+      b.style.background='#fff'; b.style.borderColor=color; b.style.borderWidth=RING;
+      if(!nd._img){
+        const img=document.createElement('img'); img.alt=nd.a.ticker; img.draggable=false;
+        img.addEventListener('error',()=>{nd._broken=true; nd._st=null; applyState(nd,'disc');});
+        nd._img=img; b.appendChild(img);
+      }
+      if(!nd._img.getAttribute('src')) nd._img.setAttribute('src',LOGO(nd.a.logo));
+      nd._img.style.display='';
+    } else { // disc — category colour replaces the icon
+      if(nd._img){nd._img.style.display='none'; nd._img.removeAttribute('src');}
+      b.style.background=`radial-gradient(circle at 33% 30%, ${color}, ${color}C8)`; b.style.borderWidth='0';
+    }
+  }
 
   // Controls differ by view:
   //   683 (filter off): map — wheel-zoom + drag-pan + viewport culling; bubbles static.
@@ -1667,21 +1680,21 @@ function renderAnchorageOverview(){
     minZoom=z*0.5; maxZoom=z*16; view.zoom=z;
     view.x=W/2-((mnx+mxx)/2)*z; view.y=H/2-((mny+mxy)/2)*z;
   }
-  // viewport culling (683): hide + unload bubbles outside view so pan/zoom stays light and
-  // off-screen logos free memory; they reload on return. Hysteresis avoids edge thrash.
-  function cull(){
-    if(!mapControls) return;
+  // Level-of-detail (683 map): a coin's logo loads only when its on-screen radius is big
+  // enough; smaller / peripheral bubbles show a plain category-colour disc, so the default
+  // view isn't a dense wall of icons. Zoom in -> more logos load. Off-screen -> culled.
+  const LOGO_PX=13;
+  function lod(){
     const W=container.clientWidth, H=container.clientHeight, m=140;
     for(const nd of nodes){
-      const sx=nd.x*view.zoom+view.x, sy=nd.y*view.zoom+view.y, sr=nd.r*view.zoom+4;
+      const sx=nd.x*view.zoom+view.x, sy=nd.y*view.zoom+view.y, sr=nd.r*view.zoom;
       const vis=(sx+sr>-m)&&(sx-sr<W+m)&&(sy+sr>-m)&&(sy-sr<H+m);
-      const hidden=nd.el.style.display==='none';
-      if(vis&&hidden){nd.el.style.display=''; if(nd._img&&!nd._img.getAttribute('src'))nd._img.setAttribute('src',LOGO(nd.a.logo));}
-      else if(!vis&&!hidden){nd.el.style.display='none'; if(nd._img)nd._img.removeAttribute('src');}
+      applyState(nd, !vis?'hidden':((nd.a.logo&&!nd._broken&&sr>=LOGO_PX)?'logo':'disc'));
     }
   }
-  paint(); fit(); apply(); cull();
-  if(mapControls) container.classList.add('ov-map'); else container.classList.remove('ov-map');
+  paint(); fit(); apply();
+  if(mapControls){ container.classList.add('ov-map'); lod(); }
+  else { container.classList.remove('ov-map'); nodes.forEach(nd=>applyState(nd, nd.a.logo?'logo':'disc')); }
 
   // ---- 54 live gravity loop: organic settle that re-packs after drags, sleeps when calm ----
   function loop(){
@@ -1704,7 +1717,7 @@ function renderAnchorageOverview(){
     const mx=e.clientX-rect.left, my=e.clientY-rect.top;
     const wx=(mx-view.x)/view.zoom, wy=(my-view.y)/view.zoom;
     view.zoom=Math.max(minZoom,Math.min(maxZoom,view.zoom*Math.exp(-e.deltaY*0.0015)));
-    view.x=mx-wx*view.zoom; view.y=my-wy*view.zoom; apply(); cull();
+    view.x=mx-wx*view.zoom; view.y=my-wy*view.zoom; apply(); lod();
   }
   function onDown(e){
     if(e.button) return;
@@ -1720,7 +1733,7 @@ function renderAnchorageOverview(){
   function onMove(e){
     const dx=e.clientX-last.x, dy=e.clientY-last.y; last={x:e.clientX,y:e.clientY};
     if(Math.abs(dx)+Math.abs(dy)>1) moved=true;
-    if(mode==='pan'){view.x+=dx; view.y+=dy; apply(); cull();}
+    if(mode==='pan'){view.x+=dx; view.y+=dy; apply(); lod();}
     else if(mode==='drag'&&dragNode){dragNode.x+=dx/view.zoom; dragNode.y+=dy/view.zoom; wake();}
   }
   function onUp(){
