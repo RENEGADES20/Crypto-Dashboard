@@ -1581,10 +1581,14 @@ function renderAnchorageOverview(){
   const GA=Math.PI*(3-Math.sqrt(5));
   // single cluster: golden-angle spiral seed (biggest near centre), settled by physics
   const nodes=assets.map((a,i)=>{
-    const t=Math.sqrt(i/n), ang=i*GA, jit=a.marketCap?0:(((i*1373)%100)/100*4-2);
-    return {a,r:sizeFor(a.marketCap)/2+jit,x:Math.cos(ang)*t*640,y:Math.sin(ang)*t*430,vx:0,vy:0,dragging:false,el:null};
+    const jit=a.marketCap?0:(((i*1373)%100)/100*4-2);
+    return {a,r:sizeFor(a.marketCap)/2+jit,x:0,y:0,vx:0,vy:0,dragging:false,el:null};
   });
   const maxR=Math.max(...nodes.map(nd=>nd.r)), cell=2*maxR+cfg.pad+1;
+  // Fibonacci (golden-angle) seed into a wide horizontal ellipse, biggest near the centre.
+  const area=nodes.reduce((s,nd)=>s+Math.PI*nd.r*nd.r,0);
+  const AR=1.62, RY=Math.sqrt(area/(0.56*Math.PI*AR)), RX=RY*AR;
+  nodes.forEach((nd,i)=>{const t=Math.sqrt((i+0.5)/n), ang=i*GA; nd.x=Math.cos(ang)*t*RX; nd.y=Math.sin(ang)*t*RY;});
 
   // grid-bucketed collision -> O(n), keeps 683 smooth. Size-weighted so big bubbles barely move.
   function collide(){
@@ -1610,9 +1614,15 @@ function renderAnchorageOverview(){
     collide();
     for(const nd of nodes){if(nd.dragging)continue; nd.x+=nd.vx; nd.y+=nd.vy; nd.vx*=0.84; nd.vy*=0.84;}
   }
-  for(let s=0;s<(overviewFilterOn?90:200);s++) gravStep(0.02);
-  // drive residual overlaps to zero — the 683 map must never stack
-  for(let s=0;s<(overviewFilterOn?140:340);s++) collide();
+  if(!overviewFilterOn){
+    // 683: keep the Fibonacci ellipse — collision only (no gravity) preserves the wide
+    // horizontal spiral while driving overlaps to zero. Static, viewed via pan/zoom.
+    for(let s=0;s<340;s++) collide();
+  } else {
+    // 54: gravity pre-settle; the live loop below keeps it organic & re-packs after drags.
+    for(let s=0;s<90;s++) gravStep(0.02);
+    for(let s=0;s<160;s++) collide();
+  }
 
   const LOGO=id=>`https://s2.coinmarketcap.com/static/img/coins/64x64/${id}.png`;
   // build bubbles
@@ -1623,6 +1633,7 @@ function renderAnchorageOverview(){
     b.style.width=`${size.toFixed(1)}px`; b.style.height=`${size.toFixed(1)}px`;
     b.style.borderColor=color; b.style.opacity='0';
     if(a.logo){
+      b.style.borderWidth=overviewFilterOn?'4.5px':'3px';   // 54 ring x1.5
       const img=document.createElement('img');
       img.src=LOGO(a.logo); img.alt=a.ticker; img.loading='lazy'; img.draggable=false;
       img.addEventListener('error',()=>{b.classList.add('ov-nologo');b.style.background=`radial-gradient(circle at 32% 28%, ${color}, ${color}D0)`;img.remove();});
