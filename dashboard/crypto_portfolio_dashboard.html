@@ -45,7 +45,10 @@ html{zoom:1.25}
 .overview-body{display:grid;grid-template-columns:1.25fr .75fr;gap:16px}
 .overview-bubble-card{background:linear-gradient(180deg,#f7f9fe 0%,#eef3f9 100%);border:1px solid #e9edf5;border-radius:16px;padding:16px;min-height:560px;position:relative;overflow:hidden}
 .overview-bubble-card::before{content:"";position:absolute;inset:auto 0 0 auto;width:240px;height:240px;border-radius:50%;background:radial-gradient(circle,rgba(56,97,251,.12),transparent 70%);pointer-events:none}
-.overview-bubbles{position:relative;height:520px;overflow:hidden}
+.overview-bubbles{position:relative;height:540px;overflow:hidden;touch-action:none;user-select:none}
+.overview-bubbles.ov-map{cursor:grab}
+.overview-bubbles.ov-map.ov-panning{cursor:grabbing}
+.overview-stage{position:absolute;left:0;top:0;width:0;height:0;transform-origin:0 0}
 .overview-bubble{position:absolute;display:flex;align-items:center;justify-content:center;border-radius:50%;background:#fff;border:1.5px solid #cbd5e1;box-shadow:0 6px 16px rgba(15,23,42,.14);cursor:pointer;overflow:hidden;padding:0;transition:transform .2s ease,opacity .28s ease,box-shadow .2s ease;transform:translate(-50%,-50%);z-index:1}
 .overview-bubble img{width:100%;height:100%;object-fit:contain;border-radius:50%;display:block;pointer-events:none}
 .overview-bubble.ov-nologo{border-width:0}
@@ -1552,6 +1555,8 @@ const SECTOR_ORDER=['L1','L2','DeFi','Infrastructure','AI','DePIN','Payments','R
 function sectorColor(sector){return SECTOR_PALETTE[sector]||'#64748b';}
 function fmtCap(v){if(!v)return'—';if(v>=1e12)return'$'+(v/1e12).toFixed(2)+'T';if(v>=1e9)return'$'+(v/1e9).toFixed(2)+'B';if(v>=1e6)return'$'+(v/1e6).toFixed(0)+'M';return'$'+v.toLocaleString();}
 
+let ovState=null;
+
 function renderAnchorageOverview(){
   const container=document.getElementById('overview-bubbles');
   const status=document.getElementById('overview-filter-status');
@@ -1559,58 +1564,64 @@ function renderAnchorageOverview(){
   if(!container)return;
   const fullN=(typeof OVERVIEW_ASSETS!=='undefined'?OVERVIEW_ASSETS:[]).length;
   const keptN=(typeof OVERVIEW_KEPT!=='undefined'?OVERVIEW_KEPT:[]).length;
-  const assets=getOverviewAssets().slice().sort((a,b)=>(b.marketCap||0)-(a.marketCap||0));
-  if(status){status.textContent=overviewFilterOn?`Filtered view · ${keptN} kept assets`:`Full universe · ${fullN} assets`;}
+  if(status){status.textContent=overviewFilterOn?`Filtered view · ${keptN} kept assets · drag bubbles to rearrange`:`Full universe · ${fullN} assets · scroll to zoom, drag to pan`;}
 
+  if(container._ovCleanup) container._ovCleanup();
   container.innerHTML='';
-  const W=container.clientWidth||760, H=container.clientHeight||520;
-  const cx=W/2, cy=H/2, n=assets.length||1;
+  const stage=document.createElement('div');
+  stage.className='overview-stage';
+  container.appendChild(stage);
+
+  const assets=getOverviewAssets().slice().sort((a,b)=>(b.marketCap||0)-(a.marketCap||0));
+  const n=assets.length||1;
   const maxC=Math.max(1,...assets.map(a=>a.marketCap||0));
   const lnMax=Math.log10(maxC+1)||1;
-  const cfg=overviewFilterOn?{floor:36,span:64,pad:3,fill:0.40}:{floor:10.5,span:42,pad:1.4,fill:0.5};
+  const cfg=overviewFilterOn?{floor:34,span:66,pad:4}:{floor:10,span:44,pad:2};
   const sizeFor=c=>c?cfg.floor+Math.pow(Math.log10(c+1)/lnMax,1.35)*cfg.span:cfg.floor;
-  // golden-angle spiral seed: largest near the centre
   const GA=Math.PI*(3-Math.sqrt(5));
+  // single cluster: golden-angle spiral seed (biggest near centre), settled by physics
   const nodes=assets.map((a,i)=>{
-    const t=Math.sqrt(i/n), ang=i*GA;
-    // tiny deterministic jitter on floor-sized (unknown-cap) bubbles so the long tail
-    // reads as an organic band rather than a hard ring
-    const jit=a.marketCap?0:(((i*1373)%100)/100*3-1.5);
-    return {a,x:cx+Math.cos(ang)*t*W*cfg.fill,y:cy+Math.sin(ang)*t*H*cfg.fill,r:sizeFor(a.marketCap)/2+jit};
+    const t=Math.sqrt(i/n), ang=i*GA, jit=a.marketCap?0:(((i*1373)%100)/100*4-2);
+    return {a,r:sizeFor(a.marketCap)/2+jit,x:Math.cos(ang)*t*640,y:Math.sin(ang)*t*430,vx:0,vy:0,dragging:false,el:null};
   });
-  // relax: separate overlapping bubbles, keep inside the ellipse
-  const passes=overviewFilterOn?70:30, ex=W/2-6, ey=H/2-6;
-  for(let p=0;p<passes;p++){
-    for(let i=0;i<n;i++){
-      const A=nodes[i];
-      for(let j=i+1;j<n;j++){
-        const B=nodes[j];
-        let dx=B.x-A.x, dy=B.y-A.y, d=Math.sqrt(dx*dx+dy*dy)||0.01, min=A.r+B.r+cfg.pad;
-        if(d<min){
-          // size-weighted push: bigger bubbles move less, so high-cap assets stay centred
-          const k=(min-d)/d, ox=dx*k, oy=dy*k, tot=A.r+B.r, wa=B.r/tot, wb=A.r/tot;
-          A.x-=ox*wa; A.y-=oy*wa; B.x+=ox*wb; B.y+=oy*wb;
+  const maxR=Math.max(...nodes.map(nd=>nd.r)), cell=2*maxR+cfg.pad+1;
+
+  // grid-bucketed collision -> O(n), keeps 683 smooth. Size-weighted so big bubbles barely move.
+  function collide(){
+    const grid=new Map();
+    for(let i=0;i<n;i++){const nd=nodes[i]; nd._cx=Math.floor(nd.x/cell); nd._cy=Math.floor(nd.y/cell);
+      const k=nd._cx+','+nd._cy; (grid.get(k)||grid.set(k,[]).get(k)).push(i);}
+    for(let i=0;i<n;i++){const A=nodes[i];
+      for(let gx=A._cx-1;gx<=A._cx+1;gx++)for(let gy=A._cy-1;gy<=A._cy+1;gy++){
+        const arr=grid.get(gx+','+gy); if(!arr)continue;
+        for(const j of arr){ if(j<=i)continue; const B=nodes[j];
+          let dx=B.x-A.x,dy=B.y-A.y,d=Math.sqrt(dx*dx+dy*dy)||0.01,min=A.r+B.r+cfg.pad;
+          if(d<min){const k2=(min-d)/d,ox=dx*k2,oy=dy*k2,tot=A.r+B.r,wa=B.r/tot,wb=A.r/tot;
+            if(!A.dragging){A.x-=ox*wa;A.y-=oy*wa;} if(!B.dragging){B.x+=ox*wb;B.y+=oy*wb;}}
         }
       }
     }
-    for(const nd of nodes){
-      const nx=(nd.x-cx)/ex, ny=(nd.y-cy)/ey, rr=Math.hypot(nx,ny);
-      if(rr>1){nd.x=cx+nx/rr*ex; nd.y=cy+ny/rr*ey;}
-    }
   }
-  // paint
+  // settle: centre gravity (stronger vertically -> wider ellipse) + collision
+  for(let s=0;s<(overviewFilterOn?180:120);s++){
+    const G=0.02;
+    for(const nd of nodes){if(nd.dragging)continue; nd.vx+=-nd.x*G; nd.vy+=-nd.y*G*1.55;}
+    collide();
+    for(const nd of nodes){if(nd.dragging)continue; nd.x+=nd.vx; nd.y+=nd.vy; nd.vx*=0.84; nd.vy*=0.84;}
+  }
+  for(let s=0;s<10;s++) collide();
+
+  // build bubbles
   nodes.forEach(nd=>{
     const a=nd.a, size=nd.r*2, color=sectorColor(a.sector);
     const b=document.createElement('button');
-    b.type='button'; b.className='overview-bubble';
-    b.style.left=`${nd.x.toFixed(1)}px`; b.style.top=`${nd.y.toFixed(1)}px`;
+    b.type='button'; b.className='overview-bubble'; b._node=nd;
     b.style.width=`${size.toFixed(1)}px`; b.style.height=`${size.toFixed(1)}px`;
-    b.style.borderColor=color;
-    b.style.opacity='0';
+    b.style.borderColor=color; b.style.opacity='0';
     if(a.logo){
       const img=document.createElement('img');
       img.src=`https://s2.coinmarketcap.com/static/img/coins/64x64/${a.logo}.png`;
-      img.alt=a.ticker; img.loading='lazy';
+      img.alt=a.ticker; img.loading='lazy'; img.draggable=false;
       img.addEventListener('error',()=>{b.classList.add('ov-nologo');b.style.background=`radial-gradient(circle at 32% 28%, ${color}, ${color}D0)`;img.remove();});
       b.appendChild(img);
     } else {
@@ -1618,13 +1629,68 @@ function renderAnchorageOverview(){
       b.style.background=`radial-gradient(circle at 32% 28%, ${color}, ${color}D0)`;
     }
     b.title=`${a.name} · ${SECTOR_LABELS[a.sector]||a.sector}${a.marketCap?' · '+fmtCap(a.marketCap):''}`;
-    const show=()=>updateOverviewRule(a);
-    b.addEventListener('mouseenter',show);
-    b.addEventListener('focus',show);
-    b.addEventListener('click',show);
-    container.appendChild(b);
+    b.addEventListener('mouseenter',()=>{if(!mode)updateOverviewRule(a);});
+    b.addEventListener('focus',()=>updateOverviewRule(a));
+    nd.el=b; stage.appendChild(b);
     requestAnimationFrame(()=>{b.style.opacity='1';});
   });
+
+  // Controls differ by view:
+  //   683 (filter off): map controls (wheel-zoom + drag-pan); bubbles NOT draggable.
+  //   54  (filter on):  draggable bubbles; NO zoom/pan — auto-fit shows all 54.
+  const interactiveBubbles=overviewFilterOn;
+  const mapControls=!overviewFilterOn;
+  const view={x:0,y:0,zoom:1};
+  let minZoom=0.3, maxZoom=6, mode=null, last=null, dragNode=null, downBubble=null, moved=false;
+  const apply=()=>{stage.style.transform=`translate(${view.x.toFixed(1)}px,${view.y.toFixed(1)}px) scale(${view.zoom.toFixed(4)})`;};
+  const paint=()=>{for(const nd of nodes){nd.el.style.left=`${nd.x.toFixed(1)}px`; nd.el.style.top=`${nd.y.toFixed(1)}px`;}};
+  function fit(){
+    let mnx=1e9,mny=1e9,mxx=-1e9,mxy=-1e9;
+    for(const nd of nodes){mnx=Math.min(mnx,nd.x-nd.r);mxx=Math.max(mxx,nd.x+nd.r);mny=Math.min(mny,nd.y-nd.r);mxy=Math.max(mxy,nd.y+nd.r);}
+    const W=container.clientWidth||760, H=container.clientHeight||520;
+    const z=Math.min(W/Math.max(1,mxx-mnx), H/Math.max(1,mxy-mny))*0.94;
+    minZoom=z*0.5; maxZoom=z*16; view.zoom=z;
+    view.x=W/2-((mnx+mxx)/2)*z; view.y=H/2-((mny+mxy)/2)*z;
+  }
+  paint(); fit(); apply();
+  if(mapControls) container.classList.add('ov-map'); else container.classList.remove('ov-map');
+
+  function onWheel(e){
+    e.preventDefault();
+    const rect=container.getBoundingClientRect();
+    const mx=e.clientX-rect.left, my=e.clientY-rect.top;
+    const wx=(mx-view.x)/view.zoom, wy=(my-view.y)/view.zoom;
+    view.zoom=Math.max(minZoom,Math.min(maxZoom,view.zoom*Math.exp(-e.deltaY*0.0015)));
+    view.x=mx-wx*view.zoom; view.y=my-wy*view.zoom; apply();
+  }
+  function onDown(e){
+    if(e.button) return;
+    const bub=e.target.closest('.overview-bubble');
+    moved=false; last={x:e.clientX,y:e.clientY}; downBubble=bub;
+    if(interactiveBubbles && bub && bub._node){mode='drag'; dragNode=bub._node; dragNode.dragging=true;}
+    else if(mapControls){mode='pan'; container.classList.add('ov-panning');}
+    else { mode='tap'; }   // 54 background: no pan, just allow tap-select
+    window.addEventListener('pointermove',onMove);
+    window.addEventListener('pointerup',onUp);
+    e.preventDefault();
+  }
+  function onMove(e){
+    const dx=e.clientX-last.x, dy=e.clientY-last.y; last={x:e.clientX,y:e.clientY};
+    if(Math.abs(dx)+Math.abs(dy)>1) moved=true;
+    if(mode==='pan'){view.x+=dx; view.y+=dy; apply();}
+    else if(mode==='drag'&&dragNode){dragNode.x+=dx/view.zoom; dragNode.y+=dy/view.zoom; for(let s=0;s<5;s++)collide(); paint();}
+  }
+  function onUp(){
+    if(mode==='drag'&&dragNode) dragNode.dragging=false;
+    if(!moved && downBubble && downBubble._node) updateOverviewRule(downBubble._node.a);
+    mode=null; dragNode=null; downBubble=null; container.classList.remove('ov-panning');
+    window.removeEventListener('pointermove',onMove); window.removeEventListener('pointerup',onUp);
+  }
+  if(mapControls) container.addEventListener('wheel',onWheel,{passive:false});
+  container.addEventListener('pointerdown',onDown);
+  container._ovCleanup=()=>{container.removeEventListener('wheel',onWheel); container.removeEventListener('pointerdown',onDown); window.removeEventListener('pointermove',onMove); window.removeEventListener('pointerup',onUp); container.classList.remove('ov-map','ov-panning');};
+
+  ovState={nodes,view,fit,apply,paint};
   renderOverviewLegend(assets);
   updateOverviewRule(null);
   if(panel) panel.classList.toggle('is-collapsed',!overviewFilterOn);
