@@ -2131,6 +2131,8 @@ function buildCompChart(){
     ];
   }
   datasets=datasets.filter(d=>d.label==='Others'||activeCompCoins.has(d.label));
+  // Drop any coin whose history wasn't available (avoids flat-zero lines).
+  datasets=datasets.filter(d=>d.label==='Others'||(d.data&&d.data.length&&d.data.some(v=>v>0)));
   datasets=datasets.map(d=>({...d,fill:true,tension:.4,borderWidth:0.8,pointRadius:0,pointHoverRadius:4}));
 
   if(compChart){compChart.destroy();compChart=null;}

@@ -5,7 +5,7 @@
 // Optional: set COINGECKO_API_KEY (free "Demo" key) in Vercel env vars for higher,
 // more reliable rate limits. Works keyless too (slower: calls are spaced out).
 
-export const config = { maxDuration: 30 };
+export const config = { maxDuration: 60 };
 
 const CG = 'https://api.coingecko.com/api/v3';
 // The six majors the charts actually plot. Order = stacking order.
@@ -25,11 +25,11 @@ function headers() {
   if (k) h['x-cg-demo-api-key'] = k;
   return h;
 }
-async function cg(path, tries = 3) {
+async function cg(path, tries = 4) {
   for (let i = 0; i < tries; i++) {
     const r = await fetch(CG + path, { headers: headers() });
     if (r.ok) return r.json();
-    if (r.status === 429 && i < tries - 1) { await sleep(2500); continue; }
+    if (r.status === 429 && i < tries - 1) { await sleep(4000 * (i + 1)); continue; }
     throw new Error('CoinGecko ' + r.status + ' on ' + path);
   }
 }
@@ -37,7 +37,7 @@ async function cg(path, tries = 3) {
 export default async function handler(req, res) {
   try {
     const hasKey = !!process.env.COINGECKO_API_KEY;
-    const gap = hasKey ? 250 : 1300; // space out keyless calls to dodge 429s
+    const gap = hasKey ? 300 : 2000; // space out keyless calls to dodge 429s
 
     const g = await cg('/global');
     const total_now = g.data.total_market_cap.usd;
