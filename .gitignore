@@ -1,25 +1,36 @@
-# Publish ONLY the web app. Ignore everything else by default (whitelist).
-# This protects local research material AND prevents secrets (e.g. the CMC key
-# hardcoded in data/*.py) from ever being committed.
+# ─────────────────────────────────────────────────────────────────────────────
+# Whitelist .gitignore — publish ONLY the web app + docs.
+# Everything else stays local: the Python research pipeline (pipeline/), research
+# material and legacy snapshots (archive/, data/, materials/, *.xlsx), build/IDE
+# cruft, and ALL credentials. This guarantees secrets and proprietary research can
+# never be committed, even by accident.
+# ─────────────────────────────────────────────────────────────────────────────
+
+# Ignore everything by default …
 *
 
-# --- Web app (allowed) ---
-!index.html
-!overview_assets.js
+# … then explicitly allow the web app + docs.
 !.gitignore
 !.nojekyll
+!README.md
+!index.html
 
-# Vercel serverless API
+!styles/
+!styles/**
+!src/
+!src/**
 !api/
-!api/*.js
+!api/**
+!docs/
+!docs/**
 
-# Dashboard copies (HTML + JS only; no PDFs/DOCX inside)
-!dashboard/
-!dashboard/*.html
-!dashboard/*.js
-
-# --- Secrets: never publish, even if matched above ---
+# Never publish credentials, even if a rule above would match them.
 .env
 .env.*
 **/api.txt
 **/tt_session.json
+**/.factor_api_cache/
+**/__pycache__/
+
+# Re-allow the env template (must be the last word on this file).
+!.env.example
