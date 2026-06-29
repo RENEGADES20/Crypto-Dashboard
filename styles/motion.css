@@ -1,0 +1,52 @@
+  /* ── Motion system — subtle & unified; every curve matches the existing easing ── */
+  :root{--gx-ease:cubic-bezier(.22,.61,.36,1)}
+  @keyframes gxFadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+  @keyframes gxFadeDown{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
+
+  /* Tab panes ease in gently each time they become visible */
+  .pane.active{animation:gxFadeUp .42s var(--gx-ease) both}
+
+  /* App chrome settles in on first paint */
+  .gx-head{animation:gxFadeDown .55s var(--gx-ease) both}
+  .gx-kpibar{animation:gxFadeUp .55s .06s var(--gx-ease) both}
+
+  /* KPI cards: light staggered entrance + hover lift */
+  .kpi-row .kpi{animation:gxFadeUp .5s var(--gx-ease) both;transition:transform .18s var(--gx-ease),box-shadow .18s var(--gx-ease)}
+  .kpi-row .kpi:nth-child(2){animation-delay:.05s}
+  .kpi-row .kpi:nth-child(3){animation-delay:.10s}
+  .kpi-row .kpi:nth-child(4){animation-delay:.15s}
+  .kpi-row .kpi:nth-child(5){animation-delay:.20s}
+  .kpi-row .kpi:hover{transform:translateY(-2px);box-shadow:0 14px 30px -18px rgba(40,44,60,.34)!important}
+
+  /* Asset ticker strip: matching hover lift */
+  .asc{transition:box-shadow .16s var(--gx-ease),transform .16s var(--gx-ease)}
+  .asc:hover{transform:translateY(-2px)}
+
+  /* Content cards hold charts — deepen the shadow on hover instead of lifting */
+  .card{transition:box-shadow .2s var(--gx-ease)}
+  .card:hover{box-shadow:0 16px 40px -26px rgba(40,44,60,.32)!important}
+
+  /* Tactile press feedback on controls */
+  .gx-pill .tab-btn,.overview-toggle,.back-btn,.tog-btn,.kiv,.ctog{transition:all .18s var(--gx-ease)}
+  .gx-pill .tab-btn:active,.overview-toggle:active,.back-btn:active,.tog-btn:active,.kiv:active,.ctog:active{transform:scale(.96)}
+  .side-row{transition:transform .14s var(--gx-ease),opacity .14s var(--gx-ease)}
+  .side-row:hover{transform:translateX(2px)}
+
+  /* Live value tick — a brief green/red tint as a number changes (trading-desk feel, low-key) */
+  @keyframes gxValUp{from{color:#16c784}}
+  @keyframes gxValDn{from{color:#ea3943}}
+  .num-anim.val-up{animation:gxValUp .75s var(--gx-ease)}
+  .num-anim.val-dn{animation:gxValDn .75s var(--gx-ease)}
+
+  /* Ambient background — blobs drift slowly so the canvas breathes, never busy */
+  @keyframes gxDrift1{0%,100%{transform:translate(0,0)}50%{transform:translate(34px,26px)}}
+  @keyframes gxDrift2{0%,100%{transform:translate(0,0)}50%{transform:translate(-30px,-22px)}}
+  @keyframes gxDrift3{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(20px,-26px) scale(1.06)}}
+  .gx-bg .bb1{animation:gxDrift1 26s ease-in-out infinite}
+  .gx-bg .bb2{animation:gxDrift2 31s ease-in-out infinite}
+  .gx-bg .bb3{animation:gxDrift3 37s ease-in-out infinite}
+
+  /* Honour the OS reduced-motion preference */
+  @media(prefers-reduced-motion:reduce){
+    *,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important}
+  }
