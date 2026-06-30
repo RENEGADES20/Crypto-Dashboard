@@ -6,7 +6,7 @@ Interactive digital asset research dashboard.
 
 View the dashboard here:
 
-https://renegades20.github.io/Crypto-Dashboard/
+https://crypto-dashboard-beta-mocha.vercel.app/
 
 ## Notes
 
